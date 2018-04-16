@@ -76,7 +76,12 @@ function updateInformation() {
   const info = [ `Title: ${title}`, divider ]
 
   runningTasks.forEach(task => {
-    const text = [ `Downloading[${task.index}/${tasks.length}]: ${task.name}` ]
+    const total = tasks.length
+    const text = [
+      'Downloading:',
+      `[${leftPad(task.index, total.toString().length)}/${total}]`,
+      leftPad(task.name, 16),
+    ]
     const { percent, speed, time } = task.progress
 
     if (typeof speed === 'number') {

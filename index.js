@@ -87,7 +87,7 @@ function updateInformation() {
     if (typeof speed === 'number') {
       text.push(leftPad(`${(percent * 100).toFixed(1)}%`, 10))
       if (speed) text.push(leftPad(`${prettyBytes(speed)}/s`, 10))
-      if (time.remaining) text.push(leftPad(prettyMs(Math.max(time.remaining, 1) * 1000), 10))
+      if (time && time.remaining) text.push(leftPad(prettyMs(Math.max(time.remaining, 1) * 1000), 10))
     }
 
     info.push(text.join(' '))
@@ -118,7 +118,7 @@ function runTask(task) {
   downloadStream.on('end', () => {
     task.progress.percent = 1
     task.progress.speed = 0
-    task.progress.time.remaining = 0
+    if (task.progress.time) task.progress.time.remaining = 0
 
     setTimeout(() => {
       task.completed = true

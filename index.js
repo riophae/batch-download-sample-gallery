@@ -13,7 +13,7 @@ let outputDir = ''
 const startTime = Date.now()
 let hudIntervalId
 let taskIntervalId
-const parallel = 3
+const config = require('./lib/read-config')
 
 function getGalleryLoader(url) {
   if (!url) throw new Error('No url provided')
@@ -64,7 +64,7 @@ function findPendingTask() {
 
 function checkTaskState() {
   const runningTasks = findRunningTasks()
-  if (runningTasks.length === parallel) return
+  if (runningTasks.length === config.parallel) return
   const pendingTask = findPendingTask()
   if (!pendingTask) return done()
   runTask(pendingTask)

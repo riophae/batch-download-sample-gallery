@@ -4,6 +4,7 @@ const update = require('log-update')
 const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
+const leftPad = require('left-pad')
 const download = require('./lib/download')
 const filenamify = require('./lib/filenamify')
 
@@ -80,9 +81,9 @@ function updateHudInformation() {
     const { percent, speed, time } = task.progress
     if (typeof speed === 'number') {
       text.push(
-        `${(percent * 100).toFixed(1)}%`,
-        speed ? `${prettyBytes(speed)}/s` : '',
-        time.remaining ? prettyMs(time.remaining * 1000) : '',
+        leftPad(`${(percent * 100).toFixed(1)}%`, 10),
+        speed ? leftPad(`${prettyBytes(speed)}/s`, 10) : '',
+        time.remaining ? leftPad(prettyMs(Math.max(time.remaining, 1) * 1000), 10) : '',
       )
     }
     info.push(text.join(' '))

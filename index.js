@@ -67,8 +67,8 @@ function checkTaskState() {
   const runningTasks = findRunningTasks()
   if (runningTasks.length === config.parallel) return
   const pendingTask = findPendingTask()
-  if (!pendingTask) return done()
-  runTask(pendingTask)
+  if (pendingTask) return runTask(pendingTask)
+  if (runningTasks.length === 0) done()
 }
 
 function updateHudInformation() {

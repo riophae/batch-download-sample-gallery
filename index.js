@@ -17,14 +17,13 @@ let taskIntervalId
 const config = require('./lib/read-config')
 
 function getGalleryLoader(url) {
-  if (!url) throw new Error('No url provided')
   if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
-  throw new Error('Unknown')
+  throw new Error('Unknown website')
 }
 
 function getGalleryUrl() {
   const galleryUrl = process.argv[2]
-  if (!galleryUrl) throw new Error('Please specify gallery url.')
+  if (!galleryUrl) throw new Error('Please specify sample gallery url.')
   return galleryUrl
 }
 
@@ -79,13 +78,13 @@ function updateInformation() {
   runningTasks.forEach(task => {
     const text = [ `Downloading[${task.index}/${tasks.length}]: ${task.name}` ]
     const { percent, speed, time } = task.progress
+
     if (typeof speed === 'number') {
-      text.push(
-        leftPad(`${(percent * 100).toFixed(1)}%`, 10),
-        speed ? leftPad(`${prettyBytes(speed)}/s`, 10) : '',
-        time.remaining ? leftPad(prettyMs(Math.max(time.remaining, 1) * 1000), 10) : '',
-      )
+      text.push(leftPad(`${(percent * 100).toFixed(1)}%`, 10))
+      if (speed) text.push(leftPad(`${prettyBytes(speed)}/s`, 10))
+      if (time.remaining) text.push(leftPad(prettyMs(Math.max(time.remaining, 1) * 1000), 10))
     }
+
     info.push(text.join(' '))
   })
 
@@ -121,8 +120,8 @@ function runTask(task) {
       task.running = false
     }, 1000)
   })
-  downloadStream.pipe(writeStream)
 
+  downloadStream.pipe(writeStream)
   task.running = true
 }
 

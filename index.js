@@ -14,6 +14,7 @@ let outputDir = ''
 const startTime = Date.now()
 let infoIntervalId
 let taskIntervalId
+const divider = `-`.repeat(80)
 const config = require('./lib/read-config')
 
 function getGalleryLoader(url) {
@@ -37,7 +38,7 @@ async function getGalleryData(galleryUrl) {
 }
 
 async function prepare(galleryData) {
-  title = galleryData.title
+  title = 'Gallery: ' + galleryData.title
   outputDir = path.join(__dirname, 'output', filenamify(title))
 
   await makeDir(outputDir)
@@ -72,8 +73,7 @@ function checkTaskState() {
 
 function updateInformation() {
   const runningTasks = findRunningTasks()
-  const divider = `-`.repeat(80)
-  const info = [ `Title: ${title}`, divider ]
+  const info = [ title, divider ]
 
   runningTasks.forEach(task => {
     const total = tasks.length
@@ -82,9 +82,10 @@ function updateInformation() {
       `[${leftPad(task.index, total.toString().length)}/${total}]`,
       leftPad(task.name, 16),
     ]
-    const { percent, speed, time } = task.progress
+    const { percent, speed, size, time } = task.progress
 
     if (typeof speed === 'number') {
+      if (size && size.total) text.push(leftPad(prettyBytes(size.total), 10))
       text.push(leftPad(`${(percent * 100).toFixed(1)}%`, 10))
       if (speed) text.push(leftPad(`${prettyBytes(speed)}/s`, 10))
       if (time && time.remaining) text.push(leftPad(prettyMs(Math.max(time.remaining, 1) * 1000), 10))
@@ -135,7 +136,7 @@ function done() {
   clearInterval(infoIntervalId)
 
   const diff = prettyMs(Date.now() - startTime)
-  update(`All tasks done in ${diff}.`)
+  update([ title, divider, `All tasks done in ${diff}.` ].join('\n'))
 }
 
 async function main() {

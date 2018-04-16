@@ -12,7 +12,7 @@ let title = ''
 let tasks = []
 let outputDir = ''
 const startTime = Date.now()
-let hudIntervalId
+let infoIntervalId
 let taskIntervalId
 const config = require('./lib/read-config')
 
@@ -71,7 +71,7 @@ function checkTaskState() {
   if (runningTasks.length === 0) done()
 }
 
-function updateHudInformation() {
+function updateInformation() {
   const runningTasks = findRunningTasks()
   const divider = `-`.repeat(80)
   const info = [ `Title: ${title}`, divider ]
@@ -94,10 +94,10 @@ function updateHudInformation() {
 
 function setupRunner() {
   checkTaskState()
-  updateHudInformation()
+  updateInformation()
 
   taskIntervalId = setInterval(checkTaskState, 50)
-  hudIntervalId = setInterval(updateHudInformation, 500)
+  infoIntervalId = setInterval(updateInformation, 500)
 }
 
 function runTask(task) {
@@ -128,7 +128,7 @@ function runTask(task) {
 
 function done() {
   clearInterval(taskIntervalId)
-  clearInterval(hudIntervalId)
+  clearInterval(infoIntervalId)
 
   const diff = prettyMs(Date.now() - startTime)
   update(`All tasks done in ${diff}.`)

@@ -39,7 +39,7 @@ async function getGalleryData(galleryUrl) {
 
 async function prepare(galleryData) {
   title = 'Gallery: ' + galleryData.title
-  outputDir = path.join(__dirname, 'output', filenamify(title))
+  outputDir = path.join(__dirname, 'output', filenamify(galleryData.title))
 
   await makeDir(outputDir)
 }

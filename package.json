@@ -1,5 +1,7 @@
 {
-  "name": "batch-download-photos",
+  "name": "batch-download-sample-gallery",
+  "author": "Riophae Lee <riophaelee@gmail.com> (https://github.com/riophae)",
+  "license": "MIT",
   "scripts": {
     "test": "npm run lint",
     "lint": "eslint --fix ."

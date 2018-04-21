@@ -19,6 +19,7 @@ const config = require('./lib/read-config')
 
 function getGalleryLoader(url) {
   if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
+  if (url.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
   throw new Error('Unknown website')
 }
 

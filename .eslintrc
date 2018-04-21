@@ -1,7 +1,6 @@
 {
   "extends": [ "riophae" ],
   "rules": {
-    "global-require": 0,
-    "prefer-destructuring": 0
+    "global-require": 0
   }
 }

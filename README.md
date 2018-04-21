@@ -14,7 +14,7 @@ Batch download sample images from digital camera review websites.
 ## Usage
 
 ```bash
-git clone https://github.com/riophae/batch-download-sample-gallery
+git clone https://github.com/riophae/batch-download-sample-gallery.git
 cd batch-download-sample-gallery
 npm install
 node download <gallery_url>

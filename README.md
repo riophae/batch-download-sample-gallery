@@ -26,6 +26,11 @@ node download <gallery_url>
 - https://www.dpreview.com/sample-galleries/5058069396/panasonic-lumix-gx9-sample-gallery
 - https://www.imaging-resource.com/PRODS/panasonic-g9/panasonic-g9GALLERY.HTM
 
+## Configuration
+
+- Copy `config.default.js` and rename it to `config.js`
+- Edit
+
 ## License
 
 MIT © [Riophae Lee](https://github.com/riophae)

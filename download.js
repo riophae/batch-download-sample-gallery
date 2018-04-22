@@ -7,7 +7,9 @@ const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
 const download = require('./lib/download')
 const filenamify = require('./lib/filenamify')
+const config = require('./lib/read-config')
 
+let galleryData
 let title = ''
 let tasks = []
 let outputDir = ''
@@ -15,7 +17,7 @@ const startTime = Date.now()
 let infoIntervalId
 let taskIntervalId
 const divider = `-`.repeat(80)
-const config = require('./lib/read-config')
+const tasksDataFile = path.join(__dirname, 'tasks.json')
 
 function getGalleryLoader(url) {
   if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
@@ -33,19 +35,17 @@ async function getGalleryData(galleryUrl) {
   update('Fetching gallery data...')
 
   const galleryLoader = getGalleryLoader(galleryUrl)
-  const galleryData = await galleryLoader(galleryUrl)
-
-  return galleryData
+  galleryData = await galleryLoader(galleryUrl)
 }
 
-async function prepare(galleryData) {
+async function prepare() {
   title = 'Gallery: ' + galleryData.title
   outputDir = path.join(__dirname, 'output', filenamify(galleryData.title))
 
   await makeDir(outputDir)
 }
 
-function createTasks(galleryData) {
+function createTasks() {
   tasks = galleryData.items.map((item, index) => ({
     index: index + 1,
     name: item.name,
@@ -125,11 +125,34 @@ function runTask(task) {
     setTimeout(() => {
       task.completed = true
       task.running = false
+      saveUnfinishedTasks()
     }, 1000)
   })
 
   downloadStream.pipe(writeStream)
   task.running = true
+}
+
+function loadUnfinishedTasks() {
+  if (fs.existsSync(tasksDataFile)) {
+    const json = require(tasksDataFile)
+    json.tasks.forEach(task => {
+      task.running = false
+      task.progress = {}
+    })
+    return json
+  }
+}
+
+function saveUnfinishedTasks() {
+  const unfinishedTasksData = { galleryData, tasks }
+  fs.writeFileSync(tasksDataFile, JSON.stringify(unfinishedTasksData))
+}
+
+function removeTasksDataFile() {
+  if (fs.existsSync(tasksDataFile)) {
+    fs.unlinkSync(tasksDataFile)
+  }
 }
 
 function done() {
@@ -138,14 +161,24 @@ function done() {
 
   const diff = prettyMs(Date.now() - startTime)
   update([ title, divider, `All tasks done in ${diff}.` ].join('\n'))
+  removeTasksDataFile()
 }
 
 async function main() {
   try {
-    const galleryUrl = getGalleryUrl()
-    const galleryData = await getGalleryData(galleryUrl)
-    await prepare(galleryData)
-    createTasks(galleryData)
+    const unfinishedTasksData = loadUnfinishedTasks()
+
+    if (unfinishedTasksData) {
+      galleryData = unfinishedTasksData.galleryData // eslint-disable-line prefer-destructuring
+      tasks = unfinishedTasksData.tasks // eslint-disable-line prefer-destructuring
+      await prepare(galleryData)
+    } else {
+      const galleryUrl = getGalleryUrl()
+      await getGalleryData(galleryUrl)
+      await prepare(galleryData)
+      createTasks(galleryData)
+    }
+
     setupRunner()
   } catch (err) {
     console.error(err)

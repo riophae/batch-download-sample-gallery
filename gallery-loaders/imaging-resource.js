@@ -14,11 +14,13 @@ async function getGallery(uri) {
 
 module.exports = async url => {
   const productId = url.match(/imaging-resource\.com\/PRODS\/([^\\]+)\//)[1]
-  const data = await getGallery(url)
+  const galleryUrl = `https://www.imaging-resource.com/PRODS/${productId}/${productId}GALLERY.HTM`
+  const data = await getGallery(galleryUrl)
   const title = data.title + ' (imaging-resource)'
   const items = data.fileNames.map(fileName => ({
     name: fileName,
     url: `https://www.imaging-resource.com/PRODS/${productId}/FULLRES/${fileName}`,
   }))
-  return { title, items }
+  const expiring = false
+  return { galleryUrl, title, items, expiring }
 }

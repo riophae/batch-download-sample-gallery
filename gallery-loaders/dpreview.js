@@ -14,8 +14,8 @@ function extNameFromUrl(url) {
   return path.extname(u.parse(url).pathname)
 }
 
-module.exports = async url => {
-  const galleryId = url.match(/dpreview\.com\/sample-galleries\/(\d+)\//)[1]
+module.exports = async galleryUrl => {
+  const galleryId = galleryUrl.match(/dpreview\.com\/sample-galleries\/(\d+)\//)[1]
   const data = await getGallery(galleryId)
   const title = data.gallery.title + ' (dpreview)'
   const items = data.images.reduce((prev, item) => {
@@ -23,5 +23,6 @@ module.exports = async url => {
     if (item.rawUrl) prev.push({ name: `${item.id}${extNameFromUrl(item.rawUrl)}`, url: item.rawUrl })
     return prev
   }, [])
-  return { title, items }
+  const expiring = true
+  return { galleryUrl, title, items, expiring }
 }

@@ -7,9 +7,9 @@ const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
-const download = require('./lib/download')
-const filenamify = require('./lib/filenamify')
-const config = require('./lib/read-config')
+const download = require('./utils/download')
+const filenamify = require('./utils/filenamify')
+const config = require('./utils/read-config')
 
 let galleryData
 let title = ''

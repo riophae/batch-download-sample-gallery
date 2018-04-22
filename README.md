@@ -1,5 +1,7 @@
 # batch-download-sample-gallery
 
+![screenshot](https://raw.githubusercontent.com/riophae/batch-download-sample-gallery/master/screenshot.png)
+
 Batch download sample images from digital camera review websites.
 
 ## Supported

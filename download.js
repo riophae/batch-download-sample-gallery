@@ -1,5 +1,7 @@
 const fs = require('fs')
 const path = require('path')
+const chalk = require('chalk')
+const ProgressBarFormatter = require('progress-bar-formatter')
 const update = require('log-update')
 const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
@@ -16,8 +18,12 @@ let outputDir = ''
 const startTime = Date.now()
 let infoIntervalId
 let taskIntervalId
-const divider = `-`.repeat(80)
 const tasksDataFile = path.join(__dirname, 'tasks.json')
+const bar = new ProgressBarFormatter({
+  complete: '=',
+  incomplete: ' ',
+  length: 18,
+})
 
 function getGalleryLoader(url) {
   if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
@@ -41,7 +47,7 @@ async function getGalleryData(galleryUrl) {
 }
 
 async function prepare() {
-  title = 'Gallery: ' + galleryData.title
+  title = chalk.bold('Gallery: ' + galleryData.title)
   outputDir = path.join(__dirname, 'output', filenamify(galleryData.title))
 
   await makeDir(outputDir)
@@ -76,23 +82,20 @@ function checkTaskState() {
 
 function updateInformation() {
   const runningTasks = findRunningTasks()
-  const info = [ title, divider ]
+  const info = [ title, '' ]
 
   runningTasks.forEach(task => {
     const total = tasks.length
-    const text = [
-      'Downloading:',
-      `[${leftPad(task.index, total.toString().length)}/${total}]`,
-      leftPad(task.name, 16),
-    ]
     const { percent, speed, size, time } = task.progress
-
-    if (typeof speed === 'number') {
-      if (size && size.total) text.push(leftPad(prettyBytes(size.total), 10))
-      text.push(leftPad(`${(percent * 100).toFixed(1)}%`, 10))
-      if (speed) text.push(leftPad(`${prettyBytes(speed)}/s`, 10))
-      if (time && time.remaining) text.push(leftPad(prettyMs(Math.max(time.remaining, 1) * 1000), 10))
-    }
+    const text = [
+      chalk.gray('Downloading:'),
+      chalk.green(`[${leftPad(task.index, total.toString().length)}/${total}]`),
+      '[' + chalk.gray(bar.format(percent || 0)) + ']',
+      leftPad(size && size.total ? prettyBytes(size.total) : '', 12),
+      leftPad(speed ? `${prettyBytes(speed)}/s` : '', 12),
+      leftPad(time && time.remaining ? prettyMs(Math.max(time.remaining, 1) * 1000) : '', 12),
+      chalk.cyan(task.name),
+    ]
 
     info.push(text.join(' '))
   })
@@ -164,7 +167,7 @@ function done() {
   clearInterval(infoIntervalId)
 
   const diff = prettyMs(Date.now() - startTime)
-  update([ title, divider, `All tasks done in ${diff}.` ].join('\n'))
+  update([ title, '', `All tasks done in ${diff}.` ].join('\n'))
   removeTasksDataFile()
 }
 

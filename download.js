@@ -25,9 +25,11 @@ function getGalleryLoader(url) {
   throw new Error('Unknown website')
 }
 
-function getGalleryUrl() {
+function getGalleryUrlFromCLA(ignoreEmpty) {
   const galleryUrl = process.argv[2]
-  if (!galleryUrl) throw new Error('Please specify sample gallery url.')
+  if (!galleryUrl && !ignoreEmpty) {
+    throw new Error('Please specify sample gallery url.')
+  }
   return galleryUrl
 }
 
@@ -133,14 +135,16 @@ function runTask(task) {
   task.running = true
 }
 
+function markCompletedTasks(savedTasks) {
+  savedTasks.forEach(savedTask => {
+    const matchedTask = tasks.find(task => task.name === savedTask.name)
+    if (matchedTask) matchedTask.completed = savedTask.completed
+  })
+}
+
 function loadUnfinishedTasks() {
   if (fs.existsSync(tasksDataFile)) {
-    const json = require(tasksDataFile)
-    json.tasks.forEach(task => {
-      task.running = false
-      task.progress = {}
-    })
-    return json
+    return require(tasksDataFile)
   }
 }
 
@@ -166,17 +170,23 @@ function done() {
 
 async function main() {
   try {
-    const unfinishedTasksData = loadUnfinishedTasks()
+    const unfinishedTasksData = await loadUnfinishedTasks()
 
     if (unfinishedTasksData) {
-      galleryData = unfinishedTasksData.galleryData // eslint-disable-line prefer-destructuring
-      tasks = unfinishedTasksData.tasks // eslint-disable-line prefer-destructuring
-      await prepare(galleryData)
-    } else {
-      const galleryUrl = getGalleryUrl()
+      const { galleryData: { galleryUrl }, tasks: savedTasks } = unfinishedTasksData
+      const galleryUrl_ = getGalleryUrlFromCLA(true)
+      if (galleryUrl_ && galleryUrl !== galleryUrl_) {
+        throw new Error('Please check out unfinished tasks first.')
+      }
       await getGalleryData(galleryUrl)
       await prepare(galleryData)
-      createTasks(galleryData)
+      createTasks()
+      markCompletedTasks(savedTasks)
+    } else {
+      const galleryUrl = getGalleryUrlFromCLA()
+      await getGalleryData(galleryUrl)
+      await prepare(galleryData)
+      createTasks()
     }
 
     setupRunner()

@@ -23,6 +23,5 @@ module.exports = async galleryUrl => {
     if (item.rawUrl) prev.push({ name: `${item.id}${extNameFromUrl(item.rawUrl)}`, url: item.rawUrl })
     return prev
   }, [])
-  const expiring = true
-  return { galleryUrl, title, items, expiring }
+  return { galleryUrl, title, items }
 }

@@ -21,6 +21,5 @@ module.exports = async url => {
     name: fileName,
     url: `https://www.imaging-resource.com/PRODS/${productId}/FULLRES/${fileName}`,
   }))
-  const expiring = false
-  return { galleryUrl, title, items, expiring }
+  return { galleryUrl, title, items }
 }

@@ -6,10 +6,10 @@ Batch download sample images from digital camera review websites.
 
 ## Supported
 
-- [dpreview.com](https://www.dpreview.com/)
-- [imaging-resource.com](https://www.imaging-resource.com/)
+- [Digital Photography Review](https://www.dpreview.com/)
+- [Imaging Resource](https://www.imaging-resource.com/)
 
-## Requirements
+## Prerequisites
 
 - Node.js
 

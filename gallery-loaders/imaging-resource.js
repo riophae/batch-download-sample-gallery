@@ -2,13 +2,21 @@ const request = require('request-promise-native')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
 
+const fileNameRE = /[a-z0-9-_]+\.[a-z0-9]{3}/ig
+const testFileNameRe = /^[a-z0-9-_]+\.[a-z0-9]{3}$/i
+
 async function getGallery(uri) {
   const html = await request.get(uri)
   const $ = cheerio.load(html)
+  $('#thumbs-table').remove('load').remove('noscript')
   const title = $('h1#bc_r_camname_large .bc_r_camname_mfr').text().trim()
-  const fileNames = $('#thumbs-table a').toArray()
+  const links = $('#thumbs-table a').toArray()
+  let fileNames = links
     .map(elem => $(elem).text().trim())
-    .filter(text => /^[a-z0-9-_]+\.[a-z0-9]{3}$/i.test(text))
+    .filter(text => testFileNameRe.test(text))
+  if (!fileNames.length) {
+    fileNames = $('#thumbs-table').text().match(fileNameRE)
+  }
   return { title, fileNames: dedupe(fileNames) }
 }
 

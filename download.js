@@ -120,7 +120,8 @@ function runTask(task) {
     task.progress = progress
   })
   downloadStream.on('error', error => {
-    throw error
+    console.error(error)
+    setTimeout(() => runTask(task), 3000)
   })
   downloadStream.on('end', () => {
     task.progress.percent = 1

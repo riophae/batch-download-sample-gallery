@@ -28,6 +28,7 @@ const bar = new ProgressBarFormatter({
 function getGalleryLoader(url) {
   if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
   if (url.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
+  if (url.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
   throw new Error('Unknown website')
 }
 
@@ -113,7 +114,11 @@ function setupRunner() {
 
 function runTask(task) {
   const outputPath = path.join(outputDir, filenamify(task.name))
-  const downloadStream = download(task.url)
+  const downloadStream = download(task.url, {
+    headers: {
+      Referer: galleryData.galleryUrl,
+    },
+  })
   const writeStream = fs.createWriteStream(outputPath)
 
   downloadStream.on('progress', progress => {

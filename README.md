@@ -8,6 +8,7 @@ Batch download sample images from digital camera review websites.
 
 - [Digital Photography Review](https://www.dpreview.com/)
 - [Imaging Resource](https://www.imaging-resource.com/)
+- [Photography Blog](https://www.photographyblog.com/)
 
 ## Prerequisites
 
@@ -27,6 +28,7 @@ node download <gallery_url>
 
 - https://www.dpreview.com/sample-galleries/5058069396/panasonic-lumix-gx9-sample-gallery
 - https://www.imaging-resource.com/PRODS/panasonic-g9/panasonic-g9GALLERY.HTM
+- https://www.photographyblog.com/reviews/leica_cl_review/sample_images/
 
 ## Configuration
 

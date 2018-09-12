@@ -2,6 +2,7 @@ const u = require('url')
 const request = require('request-promise-native')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
+const config = require('../utils/read-config')
 
 async function getGallery(uri) {
   const html = await request.get(uri)
@@ -9,7 +10,9 @@ async function getGallery(uri) {
   const title = $('.entry-title-wide h1.item').text().replace(/\bReview\b/, '').trim()
   const images = $('table .exif a').toArray()
     .filter(el => $(el).text().trim() === 'Download Original')
-  const videos = $('p.movie-link a').toArray()
+  const videos = config.downloadSampleMovies
+    ? $('p.movie-link a').toArray()
+    : []
   const items = [ ...images, ...videos ].map(el => $(el).prop('href'))
   return { title, items: dedupe(items) }
 }

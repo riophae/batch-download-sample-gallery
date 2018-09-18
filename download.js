@@ -120,13 +120,14 @@ function runTask(task) {
     },
   })
   const writeStream = fs.createWriteStream(outputPath)
+  const retryTask = () => runTask(task)
 
   downloadStream.on('progress', progress => {
     task.progress = progress
   })
   downloadStream.on('error', error => {
     console.error(error)
-    setTimeout(() => runTask(task), 3000)
+    setTimeout(retryTask, 3000)
   })
   downloadStream.on('end', () => {
     task.progress.percent = 1

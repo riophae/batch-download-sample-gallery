@@ -93,10 +93,12 @@ async function checkProgress() {
   activeDownloads.forEach(download => {
     const task = tasks[download.gid]
     const total = galleryData.items.length
-    const { totalLength, completedLength, downloadSpeed } = download
-    const percent = Number(completedLength) / Number(totalLength) || 0
-    const remaining = Number(downloadSpeed)
-      ? (1 - percent) * Number(completedLength) / Number(downloadSpeed) * 1000
+    const totalLength = Number(download.totalLength)
+    const completedLength = Number(download.completedLength)
+    const downloadSpeed = Number(download.downloadSpeed)
+    const percent = completedLength / totalLength || 0
+    const remaining = downloadSpeed
+      ? (1 - percent) * completedLength / downloadSpeed * 1000
       : NaN
     const proxyIndicator = chalk.red(task.proxyEnabled ? '*' : ' ')
 
@@ -104,8 +106,8 @@ async function checkProgress() {
       chalk.gray('Downloading:'),
       chalk.green(`[${leftPad(task.index, total.toString().length)}/${total}]`),
       '[' + chalk.gray(bar.format(percent)) + ']',
-      leftPad(prettyBytes(Number(completedLength)), 12),
-      leftPad(`${prettyBytes(Number(downloadSpeed))}/s`, 12),
+      leftPad(totalLength ? prettyBytes(totalLength) : '', 12),
+      leftPad(downloadSpeed ? `${prettyBytes(downloadSpeed)}/s` : '', 12),
       leftPad(remaining ? prettyMs(remaining) : '', 12),
       chalk.cyan(task.filename) + proxyIndicator,
     ]
@@ -125,7 +127,7 @@ async function checkProgress() {
 function setupRunner() {
   checkProgress()
 
-  progressIntervalId = setInterval(checkProgress, 500)
+  progressIntervalId = setInterval(checkProgress, 1000)
 }
 
 function done() {

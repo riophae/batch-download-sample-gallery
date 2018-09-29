@@ -1,6 +1,3 @@
 {
-  "extends": [ "riophae" ],
-  "rules": {
-    "multiline-comment-style": 0,
-  }
+  "extends": [ "riophae" ]
 }

@@ -118,7 +118,7 @@ async function checkProgress() {
   info.push(
     '',
     `Overall speed: ${prettyBytes(Number(globalStat.downloadSpeed))}/s`,
-    `Aria2 RPC interface is listening at http://localhost:${port}/jsonrpc (no secret token)`,
+    `aria2 RPC interface is listening at http://localhost:${port}/jsonrpc (no secret token)`,
   )
 
   update(info.join('\n'))

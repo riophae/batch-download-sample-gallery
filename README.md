@@ -10,9 +10,10 @@ Batch download sample images from digital camera review websites.
 - [Imaging Resource](https://www.imaging-resource.com/)
 - [Photography Blog](https://www.photographyblog.com/)
 
-## Prerequisites
+## Pre-requisites
 
-- Node.js
+- [Node.js](https://nodejs.org)
+- [aria2](https://aria2.github.io/)
 
 ## Usage
 
@@ -33,7 +34,7 @@ node download <gallery_url>
 ## Configuration
 
 - Copy `config.default.js` and rename it to `config.js`
-- Edit
+- Edit to your preference
 
 ## License
 

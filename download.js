@@ -1,4 +1,3 @@
-const fs = require('fs')
 const path = require('path')
 const chalk = require('chalk')
 const ProgressBarFormatter = require('progress-bar-formatter')
@@ -7,18 +6,19 @@ const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
-const download = require('./utils/download')
+const startAria2 = require('./utils/start-aria2')
 const filenamify = require('./utils/filenamify')
-const config = require('./utils/read-config')
+const readConfig = require('./utils/read-config')
 
+const config = readConfig()
 let galleryData
 let title = ''
-let tasks = []
+let aria2
+let port
+const tasks = Object.create(null)
 let outputDir = ''
 const startTime = Date.now()
-let infoIntervalId
-let taskIntervalId
-const tasksDataFile = path.join(__dirname, 'tasks.json')
+let progressIntervalId
 const bar = new ProgressBarFormatter({
   complete: '=',
   incomplete: ' ',
@@ -32,11 +32,13 @@ function getGalleryLoader(url) {
   throw new Error('Unknown website')
 }
 
-function getGalleryUrlFromCLA(ignoreEmpty) {
+function getGalleryUrlFromCLI() {
   const galleryUrl = process.argv[2]
-  if (!galleryUrl && !ignoreEmpty) {
-    throw new Error('Please specify sample gallery url.')
+
+  if (!galleryUrl) {
+    throw new Error('Please specify the sample gallery url.')
   }
+
   return galleryUrl
 }
 
@@ -49,156 +51,96 @@ async function getGalleryData(galleryUrl) {
 
 async function prepare() {
   title = chalk.bold('Gallery: ' + galleryData.title)
-  outputDir = path.join(__dirname, 'output', filenamify(galleryData.title))
+  outputDir = path.join(__dirname, 'output', filenamify(galleryData.title));
+  [ aria2, port ] = await startAria2()
 
   await makeDir(outputDir)
 }
 
-function createTasks() {
-  tasks = galleryData.items.map((item, index) => ({
-    index: index + 1,
-    name: item.name,
-    url: item.url,
-    completed: false,
-    running: false,
-    progress: {},
-  }))
+async function createTasks() {
+  const { items, galleryUrl } = galleryData
+
+  for (let i = 0, l = items.length; i < l; i++) {
+    const item = items[i]
+    const filename = filenamify(item.name)
+    const gid = await aria2.call('addUri', [ item.url ], {
+      dir: outputDir,
+      out: filename,
+      referer: galleryUrl,
+      'all-proxy': config.enableProxy(item.url)
+        ? config.proxy
+        : null,
+    })
+
+    tasks[gid] = {
+      index: i + 1,
+      filename,
+    }
+  }
 }
 
-function findRunningTasks() {
-  return tasks.filter(task => task.running)
-}
-
-function findPendingTask() {
-  return tasks.find(task => !task.completed && !task.running)
-}
-
-function checkTaskState() {
-  const runningTasks = findRunningTasks()
-  if (runningTasks.length === config.parallel) return
-  const pendingTask = findPendingTask()
-  if (pendingTask) return runTask(pendingTask)
-  if (runningTasks.length === 0) done()
-}
-
-function updateInformation() {
-  const runningTasks = findRunningTasks()
+async function checkProgress() {
+  const activeDownloads = await aria2.call('tellActive')
+  const globalStat = await aria2.call('getGlobalStat')
   const info = [ title, '' ]
 
-  runningTasks.forEach(task => {
-    const total = tasks.length
-    const { percent, speed, size, time } = task.progress
+  if (!Number(globalStat.numActive) && !Number(globalStat.numWaiting)) {
+    return done()
+  }
+
+  activeDownloads.forEach(download => {
+    const task = tasks[download.gid]
+    const total = galleryData.items.length
+    const { totalLength, completedLength, downloadSpeed } = download
+    const percent = Number(completedLength) / Number(totalLength) || 0
+    const remaining = Number(downloadSpeed)
+      ? (1 - percent) * Number(completedLength) / Number(downloadSpeed) * 1000
+      : NaN
+
     const text = [
       chalk.gray('Downloading:'),
       chalk.green(`[${leftPad(task.index, total.toString().length)}/${total}]`),
-      '[' + chalk.gray(bar.format(percent || 0)) + ']',
-      leftPad(size && size.total ? prettyBytes(size.total) : '', 12),
-      leftPad(speed ? `${prettyBytes(speed)}/s` : '', 12),
-      leftPad(time && time.remaining ? prettyMs(Math.max(time.remaining, 1) * 1000) : '', 12),
-      chalk.cyan(task.name),
+      '[' + chalk.gray(bar.format(percent)) + ']',
+      leftPad(prettyBytes(Number(completedLength)), 12),
+      leftPad(`${prettyBytes(Number(downloadSpeed))}/s`, 12),
+      leftPad(remaining ? prettyMs(remaining) : '', 12),
+      chalk.cyan(task.filename),
     ]
 
     info.push(text.join(' '))
   })
 
+  info.push(
+    '',
+    `Overall speed: ${prettyBytes(Number(globalStat.downloadSpeed))}/s`,
+    `Aria2 RPC interface is listening at http://localhost:${port}/jsonrpc (no secret token)`,
+  )
+
   update(info.join('\n'))
 }
 
 function setupRunner() {
-  checkTaskState()
-  updateInformation()
+  checkProgress()
 
-  taskIntervalId = setInterval(checkTaskState, 50)
-  infoIntervalId = setInterval(updateInformation, 500)
-}
-
-function runTask(task) {
-  const outputPath = path.join(outputDir, filenamify(task.name))
-  const downloadStream = download(task.url, {
-    headers: {
-      Referer: galleryData.galleryUrl,
-    },
-  })
-  const writeStream = fs.createWriteStream(outputPath)
-  const retryTask = () => runTask(task)
-
-  downloadStream.on('progress', progress => {
-    task.progress = progress
-  })
-  downloadStream.on('error', error => {
-    console.error(error)
-    setTimeout(retryTask, 3000)
-  })
-  downloadStream.on('end', () => {
-    task.progress.percent = 1
-    task.progress.speed = 0
-    if (task.progress.time) task.progress.time.remaining = 0
-
-    setTimeout(() => {
-      task.completed = true
-      task.running = false
-      saveUnfinishedTasks()
-    }, 1000)
-  })
-
-  downloadStream.pipe(writeStream)
-  task.running = true
-}
-
-function markCompletedTasks(savedTasks) {
-  savedTasks.forEach(savedTask => {
-    const matchedTask = tasks.find(task => task.name === savedTask.name)
-    if (matchedTask) matchedTask.completed = savedTask.completed
-  })
-}
-
-function loadUnfinishedTasks() {
-  if (fs.existsSync(tasksDataFile)) {
-    return require(tasksDataFile)
-  }
-}
-
-function saveUnfinishedTasks() {
-  const unfinishedTasksData = { galleryData, tasks }
-  fs.writeFileSync(tasksDataFile, JSON.stringify(unfinishedTasksData))
-}
-
-function removeTasksDataFile() {
-  if (fs.existsSync(tasksDataFile)) {
-    fs.unlinkSync(tasksDataFile)
-  }
+  progressIntervalId = setInterval(checkProgress, 500)
 }
 
 function done() {
-  clearInterval(taskIntervalId)
-  clearInterval(infoIntervalId)
+  clearInterval(progressIntervalId)
+  aria2.close()
 
   const diff = prettyMs(Date.now() - startTime)
   update([ title, '', `All tasks done in ${diff}.` ].join('\n'))
-  removeTasksDataFile()
+
+  process.exit(0)
 }
 
 async function main() {
   try {
-    const unfinishedTasksData = await loadUnfinishedTasks()
-
-    if (unfinishedTasksData) {
-      const { galleryData: { galleryUrl }, tasks: savedTasks } = unfinishedTasksData
-      const galleryUrl_ = getGalleryUrlFromCLA(true)
-      if (galleryUrl_ && galleryUrl !== galleryUrl_) {
-        throw new Error('Please check out unfinished tasks first.')
-      }
-      await getGalleryData(galleryUrl)
-      await prepare(galleryData)
-      createTasks()
-      markCompletedTasks(savedTasks)
-    } else {
-      const galleryUrl = getGalleryUrlFromCLA()
-      await getGalleryData(galleryUrl)
-      await prepare(galleryData)
-      createTasks()
-    }
-
+    const galleryUrl = getGalleryUrlFromCLI()
+    await getGalleryData(galleryUrl)
+    await prepare()
+    await createTasks()
     setupRunner()
   } catch (err) {
     console.error(err)

@@ -12,10 +12,13 @@
     "eslint-plugin-import": "^2.11.0"
   },
   "dependencies": {
+    "aria2": "^4.0.3",
     "chalk": "^2.4.0",
     "cheerio": "^1.0.0-rc.2",
     "dedupe": "^2.1.0",
+    "execa": "^1.0.0",
     "filenamify": "^2.0.0",
+    "get-port": "^4.0.0",
     "left-pad": "^1.3.0",
     "log-update": "^2.3.0",
     "make-dir": "^1.2.0",
@@ -23,7 +26,6 @@
     "pretty-ms": "^3.1.0",
     "progress-bar-formatter": "^2.0.1",
     "request": "^2.85.0",
-    "request-progress": "^3.0.0",
     "request-promise-native": "^1.0.5"
   }
 }

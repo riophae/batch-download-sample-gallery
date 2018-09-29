@@ -63,11 +63,12 @@ async function createTasks() {
   for (let i = 0, l = items.length; i < l; i++) {
     const item = items[i]
     const filename = filenamify(item.name)
+    const proxyEnabled = config.enableProxy(item.url)
     const gid = await aria2.call('addUri', [ item.url ], {
       dir: outputDir,
       out: filename,
       referer: galleryUrl,
-      'all-proxy': config.enableProxy(item.url)
+      'all-proxy': proxyEnabled
         ? config.proxy
         : null,
     })
@@ -75,6 +76,7 @@ async function createTasks() {
     tasks[gid] = {
       index: i + 1,
       filename,
+      proxyEnabled,
     }
   }
 }
@@ -96,6 +98,7 @@ async function checkProgress() {
     const remaining = Number(downloadSpeed)
       ? (1 - percent) * Number(completedLength) / Number(downloadSpeed) * 1000
       : NaN
+    const proxyIndicator = chalk.red(task.proxyEnabled ? '*' : ' ')
 
     const text = [
       chalk.gray('Downloading:'),
@@ -104,7 +107,7 @@ async function checkProgress() {
       leftPad(prettyBytes(Number(completedLength)), 12),
       leftPad(`${prettyBytes(Number(downloadSpeed))}/s`, 12),
       leftPad(remaining ? prettyMs(remaining) : '', 12),
-      chalk.cyan(task.filename),
+      chalk.cyan(task.filename) + proxyIndicator,
     ]
 
     info.push(text.join(' '))

@@ -26,6 +26,7 @@
     "pretty-ms": "^4.0.0",
     "progress-bar-formatter": "^2.0.1",
     "request": "^2.85.0",
-    "request-promise-native": "^1.0.5"
+    "request-promise-native": "^1.0.5",
+    "yaku": "^0.19.3"
   }
 }

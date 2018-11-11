@@ -9,6 +9,7 @@ Batch download sample images from digital camera review websites.
 - [Digital Photography Review](https://www.dpreview.com/)
 - [Imaging Resource](https://www.imaging-resource.com/)
 - [Photography Blog](https://www.photographyblog.com/)
+- [DCFever](https://www.dcfever.com/)
 
 ## Pre-requisites
 
@@ -30,11 +31,12 @@ node download <Gallery URL>
 - https://www.dpreview.com/sample-galleries/5058069396/panasonic-lumix-gx9-sample-gallery
 - https://www.imaging-resource.com/PRODS/panasonic-g9/panasonic-g9GALLERY.HTM
 - https://www.photographyblog.com/reviews/leica_cl_review/sample_images/
+- https://www.dcfever.com/cameras/viewsamples.php?set=1080
 
 ## Configuration
 
-- Copy `config.default.js` and rename it to `config.js`
-- Edit to your preference
+- Copy `config.default.js` and rename to `config.js`
+- Edit it to your likings
 
 ## License
 

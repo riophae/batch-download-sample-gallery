@@ -29,6 +29,7 @@ function getGalleryLoader(url) {
   if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
   if (url.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
   if (url.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
+  if (url.includes('dcfever.com')) return require('./gallery-loaders/dcfever')
   throw new Error('Unknown website')
 }
 

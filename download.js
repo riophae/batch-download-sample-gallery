@@ -66,9 +66,9 @@ async function createTasks() {
     const filename = filenamify(item.name)
     const proxyEnabled = config.enableProxy(item.url)
     const gid = await aria2.call('addUri', [ item.url ], {
-      dir: outputDir,
-      out: filename,
-      referer: galleryUrl,
+      'dir': outputDir,
+      'out': filename,
+      'referer': galleryUrl,
       'all-proxy': proxyEnabled
         ? config.aria2.proxy
         : null,

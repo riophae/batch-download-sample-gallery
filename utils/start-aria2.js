@@ -6,13 +6,13 @@ const readConfig = require('./read-config')
 
 module.exports = async function startAria2() {
   const config = readConfig()
-  const port = config.port || await getPort()
+  const port = config.aria2.port || await getPort()
 
   execa('aria2c', [
     '--enable-rpc',
     '--rpc-allow-origin-all',
     `--rpc-listen-port=${port}`,
-    `--max-concurrent-downloads=${config.parallel}`,
+    `--max-concurrent-downloads=${config.aria2.parallel}`,
     '--conditional-get',
     '--remote-time',
   ])

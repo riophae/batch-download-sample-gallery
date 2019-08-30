@@ -23,7 +23,7 @@ git clone https://github.com/riophae/batch-download-sample-gallery.git
 cd batch-download-sample-gallery
 npm install
 node download <Gallery URL>
-# the downloaded image files will be stored at output/<Gallery Name>/ directory
+# per default the downloaded image files will be stored at output/<Gallery Name>/ directory
 ```
 
 **Gallery URL examples:**

@@ -52,7 +52,7 @@ async function getGalleryData(galleryUrl) {
 
 async function prepare() {
   title = chalk.bold('Gallery: ' + galleryData.title)
-  outputDir = path.join(__dirname, 'output', filenamify(galleryData.title));
+  outputDir = path.join(config.outputDir, filenamify(galleryData.title));
   [ aria2, port ] = await startAria2()
 
   await makeDir(outputDir)

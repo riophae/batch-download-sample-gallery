@@ -1,4 +1,7 @@
+const path = require('path')
+
 module.exports = {
+  outputDir: path.join(__dirname, 'output'),
   enableProxy: (/* uri */) => false,
   downloadSampleMovies: false,
   proxy: 'http://127.0.0.1:9999',

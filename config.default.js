@@ -7,7 +7,8 @@ module.exports = {
   aria2: {
     // If not specified, a random idle port will be automatically assigned
     // port: 3456,
-    parallel: 5,
+    concurrent: 3,
+    split: 1,
     proxy: 'http://127.0.0.1:9999',
   },
 }

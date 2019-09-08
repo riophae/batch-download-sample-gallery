@@ -12,7 +12,8 @@ module.exports = async function startAria2() {
     '--enable-rpc',
     '--rpc-allow-origin-all',
     `--rpc-listen-port=${port}`,
-    `--max-concurrent-downloads=${config.aria2.parallel}`,
+    `--max-concurrent-downloads=${config.aria2.concurrent}`,
+    `--split=${config.aria2.split}`,
     '--conditional-get',
     '--remote-time',
   ])

@@ -1,12 +1,12 @@
-const request = require('request-promise-native')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
+const request = require('../utils/request')
 
 const fileNameRE = /[a-z0-9-_]+\.[a-z0-9]{3}/ig
 const testFileNameRe = /^[a-z0-9-_]+\.[a-z0-9]{3}$/i
 
-async function getGallery(uri) {
-  const html = await request.get(uri)
+async function getGallery(url) {
+  const html = await request({ url })
   const $ = cheerio.load(html)
   $('#thumbs-table').remove('load').remove('noscript')
   const title = $('h1#bc_r_camname_large .bc_r_camname_mfr').text().trim()

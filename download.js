@@ -74,7 +74,7 @@ async function createTasks() {
       'out': filename,
       'referer': galleryUrl,
       'all-proxy': isProxyEnabled
-        ? config.aria2.proxy
+        ? config.proxy
         : null,
     })
 

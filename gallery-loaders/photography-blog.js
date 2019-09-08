@@ -1,12 +1,12 @@
 const u = require('url')
-const request = require('request-promise-native')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
 const readConfig = require('../utils/read-config')
+const request = require('../utils/request')
 
-async function getGallery(uri) {
+async function getGallery(url) {
   const config = readConfig()
-  const html = await request.get(uri)
+  const html = await request({ url })
   const $ = cheerio.load(html)
   const title = $('.entry-title-wide h1.item').text().replace(/\bReview\b/, '').trim()
   const images = $('table .exif a').toArray()

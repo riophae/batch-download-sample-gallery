@@ -1,7 +1,7 @@
 const path = require('path')
 const chalk = require('chalk')
 const ProgressBarFormatter = require('progress-bar-formatter')
-const update = require('log-update')
+const logUpdate = require('log-update')
 const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
@@ -25,12 +25,8 @@ const bar = new ProgressBarFormatter({
   length: 18,
 })
 
-function getGalleryLoader(url) {
-  if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
-  if (url.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
-  if (url.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
-  if (url.includes('dcfever.com')) return require('./gallery-loaders/dcfever')
-  throw new Error('Unknown website')
+function update(lines) {
+  logUpdate(Array.isArray(lines) ? lines.join('\n') : lines)
 }
 
 function getGalleryUrlFromCLI() {
@@ -41,6 +37,14 @@ function getGalleryUrlFromCLI() {
   }
 
   return galleryUrl
+}
+
+function getGalleryLoader(url) {
+  if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
+  if (url.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
+  if (url.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
+  if (url.includes('dcfever.com')) return require('./gallery-loaders/dcfever')
+  throw new Error('Unknown website')
 }
 
 async function getGalleryData(galleryUrl) {
@@ -61,15 +65,15 @@ async function prepare() {
 async function createTasks() {
   const { items, galleryUrl } = galleryData
 
-  for (let i = 0, l = items.length; i < l; i++) {
+  for (let i = 0; i < items.length; i++) {
     const item = items[i]
     const filename = filenamify(item.name)
-    const proxyEnabled = config.enableProxy(item.url)
+    const isProxyEnabled = config.enableProxy(item.url)
     const gid = await aria2.call('addUri', [ item.url ], {
       'dir': outputDir,
       'out': filename,
       'referer': galleryUrl,
-      'all-proxy': proxyEnabled
+      'all-proxy': isProxyEnabled
         ? config.aria2.proxy
         : null,
     })
@@ -77,7 +81,7 @@ async function createTasks() {
     tasks[gid] = {
       index: i + 1,
       filename,
-      proxyEnabled,
+      isProxyEnabled,
     }
   }
 }
@@ -85,13 +89,12 @@ async function createTasks() {
 async function checkProgress() {
   const activeDownloads = await aria2.call('tellActive')
   const globalStat = await aria2.call('getGlobalStat')
-  const info = [ title, '' ]
 
   if (!Number(globalStat.numActive) && !Number(globalStat.numWaiting)) {
     return done()
   }
 
-  activeDownloads.forEach(download => {
+  const taskStateLines = activeDownloads.map(download => {
     const task = tasks[download.gid]
     const total = galleryData.items.length
     const totalLength = Number(download.totalLength)
@@ -101,9 +104,11 @@ async function checkProgress() {
     const remaining = downloadSpeed
       ? (1 - percent) * completedLength / downloadSpeed * 1000
       : NaN
-    const proxyIndicator = chalk.red(task.proxyEnabled ? '*' : ' ')
+    const proxyIndicator = task.isProxyEnabled
+      ? chalk.red('*')
+      : ' '
 
-    const text = [
+    return [
       chalk.gray('Downloading:'),
       chalk.green(`[${leftPad(task.index, total.toString().length)}/${total}]`),
       '[' + chalk.gray(bar.format(percent)) + ']',
@@ -111,18 +116,17 @@ async function checkProgress() {
       leftPad(downloadSpeed ? `${prettyBytes(downloadSpeed)}/s` : '', 12),
       leftPad(remaining ? prettyMs(remaining) : '', 12),
       chalk.cyan(task.filename) + proxyIndicator,
-    ]
-
-    info.push(text.join(' '))
+    ].join(' ')
   })
 
-  info.push(
+  update([
+    title,
+    '',
+    ...taskStateLines,
     '',
     `Overall speed: ${prettyBytes(Number(globalStat.downloadSpeed))}/s`,
     `aria2 RPC interface is listening at http://localhost:${port}/jsonrpc (no secret token)`,
-  )
-
-  update(info.join('\n'))
+  ])
 }
 
 function setupRunner() {
@@ -136,7 +140,7 @@ function done() {
   aria2.close()
 
   const diff = prettyMs(Date.now() - startTime)
-  update([ title, '', `All tasks done in ${diff}.` ].join('\n'))
+  update([ title, '', `All tasks done in ${diff}.` ])
 
   process.exit(0)
 }
@@ -150,6 +154,7 @@ async function main() {
     setupRunner()
   } catch (err) {
     console.error(err)
+    process.exit(1)
   }
 }
 

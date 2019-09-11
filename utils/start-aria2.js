@@ -1,3 +1,5 @@
+'use strict'
+
 const execa = require('execa')
 const Aria2 = require('aria2')
 const getPort = require('get-port')

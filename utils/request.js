@@ -1,3 +1,5 @@
+'use strict'
+
 const request = require('request-promise-native')
 const readConfig = require('./read-config')
 

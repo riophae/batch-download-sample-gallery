@@ -1,3 +1,5 @@
+'use strict'
+
 const path = require('path')
 const u = require('url')
 const request = require('../utils/request')

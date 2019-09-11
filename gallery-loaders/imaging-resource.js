@@ -1,3 +1,5 @@
+'use strict'
+
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
 const request = require('../utils/request')

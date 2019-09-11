@@ -1,3 +1,5 @@
+'use strict'
+
 const u = require('url')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')

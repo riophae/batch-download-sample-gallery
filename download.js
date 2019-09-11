@@ -1,3 +1,4 @@
+const fs = require('fs')
 const path = require('path')
 const chalk = require('chalk')
 const ProgressBarFormatter = require('progress-bar-formatter')
@@ -19,6 +20,8 @@ const tasks = Object.create(null)
 let outputDir = ''
 const startTime = Date.now()
 let progressIntervalId
+let sessionFilePath
+let isSessionExists
 const bar = new ProgressBarFormatter({
   complete: '=',
   incomplete: ' ',
@@ -56,8 +59,10 @@ async function getGalleryData(galleryUrl) {
 
 async function prepare() {
   title = chalk.bold('Gallery: ' + galleryData.title)
-  outputDir = path.join(config.outputDir, filenamify(galleryData.title));
-  [ aria2, port ] = await startAria2()
+  outputDir = path.join(config.outputDir, filenamify(galleryData.title))
+  sessionFilePath = path.join(outputDir, 'aria2.session')
+  isSessionExists = fs.existsSync(sessionFilePath);
+  [ aria2, port ] = await startAria2(sessionFilePath, isSessionExists)
 
   await makeDir(outputDir)
 }
@@ -152,8 +157,8 @@ async function main() {
     await prepare()
     await createTasks()
     setupRunner()
-  } catch (err) {
-    console.error(err)
+  } catch (error) {
+    console.error(error)
     process.exit(1)
   }
 }

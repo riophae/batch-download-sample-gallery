@@ -12,6 +12,7 @@
     "eslint-plugin-import": "^2.14.0"
   },
   "dependencies": {
+    "@extra-array/compact": "^1.1.7",
     "aria2": "^4.0.3",
     "chalk": "^2.4.0",
     "cheerio": "^1.0.0-rc.3",

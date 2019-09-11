@@ -2,16 +2,17 @@ const execa = require('execa')
 const Aria2 = require('aria2')
 const getPort = require('get-port')
 const portUsed = require('port-used')
+const compact = require('@extra-array/compact')
 const readConfig = require('./read-config')
 
 const CHECK_PORT_RETRY_INTERVAL = 50
 const CHECK_PORT_TIMEOUT = 5000
 
-module.exports = async function startAria2() {
+module.exports = async function startAria2(sessionFilePath, isSessionExists) {
   const config = readConfig()
   const port = config.aria2.port || await getPort()
 
-  execa('aria2c', [
+  execa('aria2c', compact([
     '--enable-rpc',
     '--rpc-allow-origin-all',
     `--rpc-listen-port=${port}`,
@@ -19,7 +20,9 @@ module.exports = async function startAria2() {
     `--split=${config.aria2.split}`,
     '--conditional-get',
     '--remote-time',
-  ]).catch(error => {
+    isSessionExists ? `--input-file=${sessionFilePath}` : null,
+    `--save-session=${sessionFilePath}`,
+  ])).catch(error => {
     console.error(error)
     process.exit(1)
   })

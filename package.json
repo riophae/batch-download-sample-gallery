@@ -29,8 +29,10 @@
     "port-used": "^2.0.8",
     "pretty-bytes": "^5.1.0",
     "pretty-ms": "^5.0.0",
+    "process-exists": "^3.1.0",
     "progress-bar-formatter": "^2.0.1",
     "request": "^2.85.0",
-    "request-promise-native": "^1.0.5"
+    "request-promise-native": "^1.0.5",
+    "yaku": "^0.19.3"
   }
 }

@@ -9,7 +9,7 @@ const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
-const startAria2 = require('./utils/start-aria2')
+const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
 const { getGlobalState, setGlobalState } = require('./utils/global-state')
 
@@ -149,10 +149,11 @@ function setupRunner() {
 }
 
 async function done() {
-  const aria2 = getGlobalState('aria2.instance')
+  const sessionFilePath = getGlobalState('aria2.session.path')
 
   clearInterval(progressIntervalId)
-  await aria2.close()
+  await stopAria2()
+  fs.unlinkSync(sessionFilePath)
 
   const diff = prettyMs(Date.now() - startTime)
   update([

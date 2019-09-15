@@ -14,7 +14,6 @@ const filenamify = require('./utils/filenamify')
 const { getGlobalState, setGlobalState } = require('./utils/global-state')
 
 const config = getGlobalState('config')
-const tasks = Object.create(null)
 const startTime = Date.now()
 let progressIntervalId
 const bar = new ProgressBarFormatter({
@@ -63,16 +62,24 @@ async function prepare() {
 
   setGlobalState('displayTitle', chalk.bold('Gallery: ' + galleryData.title))
   setGlobalState('outputDir', path.join(config.outputDir, filenamify(galleryData.title)))
-  setGlobalState('aria2.session.path', path.join(getGlobalState('outputDir'), 'aria2.session'))
-  setGlobalState('aria2.session.isExists', fs.existsSync(getGlobalState('aria2.session.path')))
+  setGlobalState('aria2.session.filePath', path.join(getGlobalState('outputDir'), 'aria2.session'))
+  setGlobalState('aria2.session.isExists', fs.existsSync(getGlobalState('aria2.session.filePath')))
+  setGlobalState('tasks.jsonFilePath', path.join(getGlobalState('outputDir'), 'tasks.json'))
 
   await startAria2()
   await makeDir(getGlobalState('outputDir'))
 }
 
+function initTasks() {
+  return getGlobalState('aria2.session.isExists')
+    ? readTasks()
+    : createTasks()
+}
+
 async function createTasks() {
   const galleryData = getGlobalState('galleryData')
   const aria2 = getGlobalState('aria2.instance')
+  const tasks = setGlobalState('tasks.data', Object.create(null))
   const { items, galleryUrl } = galleryData
 
   for (let i = 0; i < items.length; i++) {
@@ -94,12 +101,24 @@ async function createTasks() {
       isProxyEnabled,
     }
   }
+
+  fs.writeFileSync(
+    getGlobalState('tasks.jsonFilePath'),
+    JSON.stringify(tasks, null, 2),
+  )
+}
+
+function readTasks() {
+  const tasks = setGlobalState('tasks.data', Object.create(null))
+
+  Object.assign(tasks, require(getGlobalState('tasks.jsonFilePath')))
 }
 
 async function checkProgress() {
   const galleryData = getGlobalState('galleryData')
   const aria2 = getGlobalState('aria2.instance')
   const port = getGlobalState('aria2.port')
+  const tasks = getGlobalState('tasks.data')
   const activeDownloads = await aria2.call('tellActive')
   const globalStat = await aria2.call('getGlobalStat')
 
@@ -149,11 +168,11 @@ function setupRunner() {
 }
 
 async function done() {
-  const sessionFilePath = getGlobalState('aria2.session.path')
-
   clearInterval(progressIntervalId)
   await stopAria2()
-  fs.unlinkSync(sessionFilePath)
+
+  fs.unlinkSync(getGlobalState('aria2.session.filePath'))
+  fs.unlinkSync(getGlobalState('tasks.jsonFilePath'))
 
   const diff = prettyMs(Date.now() - startTime)
   update([
@@ -170,7 +189,7 @@ async function main() {
     getGalleryUrlFromCLI()
     await getGalleryData()
     await prepare()
-    await createTasks()
+    await initTasks()
     setupRunner()
   } catch (error) {
     console.error(error)

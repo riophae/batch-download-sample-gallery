@@ -26,10 +26,10 @@ async function startAria2() {
     `--split=${config.aria2.split}`,
     '--conditional-get',
     '--remote-time',
-    // getGlobalState('aria2.session.isExists')
-    //   ? `--input-file=${getGlobalState('aria2.session.path')}`
-    //   : null,
-    `--save-session=${getGlobalState('aria2.session.path')}`,
+    getGlobalState('aria2.session.isExists')
+      ? `--input-file=${getGlobalState('aria2.session.filePath')}`
+      : null,
+    `--save-session=${getGlobalState('aria2.session.filePath')}`,
   ]))
   aria2server.catch(error => {
     console.error(error)

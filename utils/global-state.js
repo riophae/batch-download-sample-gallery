@@ -12,11 +12,14 @@ const globalState = deepSeal({
     instance: null,
     port: -1,
     session: {
-      path: '',
+      filePath: '',
       isExists: false,
     },
   },
-  tasks: [],
+  tasks: {
+    data: null,
+    jsonFilePath: '',
+  },
   outputDir: '',
 })
 

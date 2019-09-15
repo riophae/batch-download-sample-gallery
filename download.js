@@ -11,19 +11,12 @@ const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
 const startAria2 = require('./utils/start-aria2')
 const filenamify = require('./utils/filenamify')
-const readConfig = require('./utils/read-config')
+const { getGlobalState, setGlobalState } = require('./utils/global-state')
 
-const config = readConfig()
-let galleryData
-let title = ''
-let aria2
-let port
+const config = getGlobalState('config')
 const tasks = Object.create(null)
-let outputDir = ''
 const startTime = Date.now()
 let progressIntervalId
-let sessionFilePath
-let isSessionExists
 const bar = new ProgressBarFormatter({
   complete: '=',
   incomplete: ' ',
@@ -41,35 +34,45 @@ function getGalleryUrlFromCLI() {
     throw new Error('Please specify the sample gallery url.')
   }
 
-  return galleryUrl
+  setGlobalState('galleryUrl', galleryUrl)
 }
 
-function getGalleryLoader(url) {
-  if (url.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
-  if (url.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
-  if (url.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
-  if (url.includes('dcfever.com')) return require('./gallery-loaders/dcfever')
+function getGalleryLoader() {
+  const galleryUrl = getGlobalState('galleryUrl')
+
+  if (galleryUrl.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
+  if (galleryUrl.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
+  if (galleryUrl.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
+  if (galleryUrl.includes('dcfever.com')) return require('./gallery-loaders/dcfever')
+
   throw new Error('Unknown website')
 }
 
-async function getGalleryData(galleryUrl) {
+async function getGalleryData() {
   update('Fetching gallery data...')
 
-  const galleryLoader = getGalleryLoader(galleryUrl)
-  galleryData = await galleryLoader(galleryUrl)
+  const galleryUrl = getGlobalState('galleryUrl')
+  const galleryLoader = getGalleryLoader()
+  const galleryData = await galleryLoader(galleryUrl)
+
+  setGlobalState('galleryData', galleryData)
 }
 
 async function prepare() {
-  title = chalk.bold('Gallery: ' + galleryData.title)
-  outputDir = path.join(config.outputDir, filenamify(galleryData.title))
-  sessionFilePath = path.join(outputDir, 'aria2.session')
-  isSessionExists = fs.existsSync(sessionFilePath);
-  [ aria2, port ] = await startAria2(sessionFilePath, isSessionExists)
+  const galleryData = getGlobalState('galleryData')
 
-  await makeDir(outputDir)
+  setGlobalState('displayTitle', chalk.bold('Gallery: ' + galleryData.title))
+  setGlobalState('outputDir', path.join(config.outputDir, filenamify(galleryData.title)))
+  setGlobalState('aria2.session.path', path.join(getGlobalState('outputDir'), 'aria2.session'))
+  setGlobalState('aria2.session.isExists', fs.existsSync(getGlobalState('aria2.session.path')))
+
+  await startAria2()
+  await makeDir(getGlobalState('outputDir'))
 }
 
 async function createTasks() {
+  const galleryData = getGlobalState('galleryData')
+  const aria2 = getGlobalState('aria2.instance')
   const { items, galleryUrl } = galleryData
 
   for (let i = 0; i < items.length; i++) {
@@ -77,7 +80,7 @@ async function createTasks() {
     const filename = filenamify(item.name)
     const isProxyEnabled = config.enableProxy(item.url)
     const gid = await aria2.call('addUri', [ item.url ], {
-      'dir': outputDir,
+      'dir': getGlobalState('outputDir'),
       'out': filename,
       'referer': galleryUrl,
       'all-proxy': isProxyEnabled
@@ -94,6 +97,9 @@ async function createTasks() {
 }
 
 async function checkProgress() {
+  const galleryData = getGlobalState('galleryData')
+  const aria2 = getGlobalState('aria2.instance')
+  const port = getGlobalState('aria2.port')
   const activeDownloads = await aria2.call('tellActive')
   const globalStat = await aria2.call('getGlobalStat')
 
@@ -101,7 +107,7 @@ async function checkProgress() {
     return done()
   }
 
-  const taskStateLines = activeDownloads.map(download => {
+  const taskStatusLines = activeDownloads.map(download => {
     const task = tasks[download.gid]
     const total = galleryData.items.length
     const totalLength = Number(download.totalLength)
@@ -127,9 +133,9 @@ async function checkProgress() {
   })
 
   update([
-    title,
+    getGlobalState('displayTitle'),
     '',
-    ...taskStateLines,
+    ...taskStatusLines,
     '',
     `Overall speed: ${prettyBytes(Number(globalStat.downloadSpeed))}/s`,
     `aria2 RPC interface is listening at http://localhost:${port}/jsonrpc (no secret token)`,
@@ -142,20 +148,26 @@ function setupRunner() {
   progressIntervalId = setInterval(checkProgress, 1000)
 }
 
-function done() {
+async function done() {
+  const aria2 = getGlobalState('aria2.instance')
+
   clearInterval(progressIntervalId)
-  aria2.close()
+  await aria2.close()
 
   const diff = prettyMs(Date.now() - startTime)
-  update([ title, '', `All tasks done in ${diff}.` ])
+  update([
+    getGlobalState('displayTitle'),
+    '',
+    `All tasks done in ${diff}.`,
+  ])
 
   process.exit(0)
 }
 
 async function main() {
   try {
-    const galleryUrl = getGalleryUrlFromCLI()
-    await getGalleryData(galleryUrl)
+    getGalleryUrlFromCLI()
+    await getGalleryData()
     await prepare()
     await createTasks()
     setupRunner()

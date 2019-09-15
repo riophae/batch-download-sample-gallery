@@ -5,13 +5,13 @@ const Aria2 = require('aria2')
 const getPort = require('get-port')
 const portUsed = require('port-used')
 const compact = require('@extra-array/compact')
-const readConfig = require('./read-config')
+const { getGlobalState, setGlobalState } = require('./global-state')
 
 const CHECK_PORT_RETRY_INTERVAL = 50
 const CHECK_PORT_TIMEOUT = 5000
 
-module.exports = async function startAria2(sessionFilePath, isSessionExists) {
-  const config = readConfig()
+module.exports = async function startAria2() {
+  const config = getGlobalState('config')
   const port = config.aria2.port || await getPort()
 
   execa('aria2c', compact([
@@ -22,8 +22,10 @@ module.exports = async function startAria2(sessionFilePath, isSessionExists) {
     `--split=${config.aria2.split}`,
     '--conditional-get',
     '--remote-time',
-    isSessionExists ? `--input-file=${sessionFilePath}` : null,
-    `--save-session=${sessionFilePath}`,
+    // getGlobalState('aria2.session.isExists')
+    //   ? `--input-file=${getGlobalState('aria2.session.path')}`
+    //   : null,
+    `--save-session=${getGlobalState('aria2.session.path')}`,
   ])).catch(error => {
     console.error(error)
     process.exit(1)
@@ -40,5 +42,6 @@ module.exports = async function startAria2(sessionFilePath, isSessionExists) {
   })
   await aria2.open()
 
-  return [ aria2, port ]
+  setGlobalState('aria2.instance', aria2)
+  setGlobalState('aria2.port', port)
 }

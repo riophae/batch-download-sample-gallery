@@ -92,7 +92,7 @@ function initTasks() {
 
 async function createTasks() {
   const config = getGlobalState('config')
-  const aria2 = getGlobalState('aria2.instance')
+  const aria2client = getGlobalState('aria2.instance')
   const tasks = setGlobalState('tasks.data', Object.create(null))
   const items = getGlobalState('galleryData.items')
 
@@ -100,7 +100,7 @@ async function createTasks() {
     const item = items[i]
     const filename = filenamify(item.name)
     const isProxyEnabled = config.enableProxy(item.url)
-    const gid = await aria2.call('addUri', [ item.url ], {
+    const gid = await aria2client.call('addUri', [ item.url ], {
       'dir': getGlobalState('outputDir'),
       'out': filename,
       'referer': getGlobalState('aria2.referer'),
@@ -130,11 +130,11 @@ function readTasks() {
 
 async function checkProgress() {
   const galleryData = getGlobalState('galleryData')
-  const aria2 = getGlobalState('aria2.instance')
+  const aria2client = getGlobalState('aria2.instance')
   const port = getGlobalState('aria2.port')
   const tasks = getGlobalState('tasks.data')
-  const activeDownloads = await aria2.call('tellActive')
-  const globalStat = await aria2.call('getGlobalStat')
+  const activeDownloads = await aria2client.call('tellActive')
+  const globalStat = await aria2client.call('getGlobalStat')
 
   if (!Number(globalStat.numActive) && !Number(globalStat.numWaiting)) {
     return done()

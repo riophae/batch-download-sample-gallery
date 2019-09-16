@@ -6,7 +6,10 @@ const dotProp = require('dot-prop')
 const globalState = deepSeal({
   config: require('./read-config')(),
   inputGalleryUrl: '',
-  galleryData: {},
+  galleryData: {
+    title: '',
+    items: [],
+  },
   displayTitle: '',
   aria2: {
     instance: null,
@@ -15,6 +18,7 @@ const globalState = deepSeal({
       filePath: '',
       isExists: false,
     },
+    referer: '',
   },
   tasks: {
     data: null,

@@ -13,8 +13,9 @@ module.exports = async () => {
     qs: { galleryId, isMobile: false },
     json: true,
   })
-  const title = data.gallery.title + ' (dpreview)'
-  const items = data.images.reduce((prev, item) => {
+
+  setGlobalState('galleryData.title', data.gallery.title + ' (dpreview)')
+  setGlobalState('galleryData.items', data.images.reduce((prev, item) => {
     if (item.url) prev.push({
       name: `${item.id}.jpg`,
       url: item.url,
@@ -26,11 +27,5 @@ module.exports = async () => {
     })
 
     return prev
-  }, [])
-
-  return {
-    galleryUrl: inputGalleryUrl,
-    title,
-    items,
-  }
+  }, []))
 }

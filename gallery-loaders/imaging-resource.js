@@ -26,7 +26,7 @@ async function getGallery(url) {
 
   return {
     title,
-    fileNames: dedupe(fileNames),
+    fileNames,
   }
 }
 
@@ -34,12 +34,12 @@ module.exports = async () => {
   const inputGalleryUrl = getGlobalState('inputGalleryUrl')
   const productId = inputGalleryUrl.match(/imaging-resource\.com\/PRODS\/([^\\]+)\//)[1]
   const galleryUrl = `https://www.imaging-resource.com/PRODS/${productId}/${productId}GALLERY.HTM`
-  const data = await getGallery(galleryUrl)
-  const title = data.title + ' (imaging-resource)'
-  const items = data.fileNames.map(fileName => ({
+  const { title, fileNames } = await getGallery(galleryUrl)
+
+  setGlobalState('galleryData.title', title + ' (imaging-resource)')
+  setGlobalState('galleryData.items', dedupe(fileNames).map(fileName => ({
     name: fileName,
     url: `https://www.imaging-resource.com/PRODS/${productId}/FULLRES/${fileName}`,
-  }))
-
-  return { galleryUrl, title, items }
+  })))
+  setGlobalState('aria2.referer', galleryUrl)
 }

@@ -2,6 +2,7 @@
 
 const fs = require('fs')
 const path = require('path')
+const assert = require('assert')
 const chalk = require('chalk')
 const ProgressBarFormatter = require('progress-bar-formatter')
 const logUpdate = require('log-update')
@@ -56,9 +57,13 @@ async function getGalleryData() {
   update('Fetching gallery data...')
 
   const galleryLoader = getGalleryLoader()
-  const galleryData = await galleryLoader()
 
-  setGlobalState('galleryData', galleryData)
+  await galleryLoader()
+
+  const { title, items } = getGlobalState('galleryData')
+
+  assert(typeof title === 'string' && title.length)
+  assert(Array.isArray(items) && items.length)
 }
 
 async function prepare() {
@@ -69,6 +74,10 @@ async function prepare() {
   setGlobalState('aria2.session.filePath', path.join(getGlobalState('outputDir'), 'aria2.session'))
   setGlobalState('aria2.session.isExists', fs.existsSync(getGlobalState('aria2.session.filePath')))
   setGlobalState('tasks.jsonFilePath', path.join(getGlobalState('outputDir'), 'tasks.json'))
+
+  if (!setGlobalState('aria2.referer')) {
+    setGlobalState('aria2.referer', getGlobalState('inputGalleryUrl'))
+  }
 
   await startAria2()
   await makeDir(getGlobalState('outputDir'))
@@ -81,10 +90,9 @@ function initTasks() {
 }
 
 async function createTasks() {
-  const galleryData = getGlobalState('galleryData')
   const aria2 = getGlobalState('aria2.instance')
   const tasks = setGlobalState('tasks.data', Object.create(null))
-  const { items, galleryUrl } = galleryData
+  const items = getGlobalState('galleryData.items')
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
@@ -93,7 +101,7 @@ async function createTasks() {
     const gid = await aria2.call('addUri', [ item.url ], {
       'dir': getGlobalState('outputDir'),
       'out': filename,
-      'referer': galleryUrl,
+      'referer': getGlobalState('aria2.referer'),
       'all-proxy': isProxyEnabled
         ? config.proxy
         : null,

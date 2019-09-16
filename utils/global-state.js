@@ -4,7 +4,7 @@ const deepSeal = require('deep-seal')
 const dotProp = require('dot-prop')
 
 const globalState = deepSeal({
-  config: require('./read-config')(),
+  config: null,
   inputGalleryUrl: '',
   galleryData: {
     title: '',

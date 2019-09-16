@@ -10,12 +10,12 @@ const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
+const initConfig = require('./utils/init-config')
 const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
 const { getGlobalState, setGlobalState } = require('./utils/global-state')
 
-const config = getGlobalState('config')
 const startTime = Date.now()
 let progressIntervalId
 const bar = new ProgressBarFormatter({
@@ -67,6 +67,7 @@ async function getGalleryData() {
 }
 
 async function prepare() {
+  const config = getGlobalState('config')
   const galleryData = getGlobalState('galleryData')
 
   setGlobalState('displayTitle', chalk.bold('Gallery: ' + galleryData.title))
@@ -90,6 +91,7 @@ function initTasks() {
 }
 
 async function createTasks() {
+  const config = getGlobalState('config')
   const aria2 = getGlobalState('aria2.instance')
   const tasks = setGlobalState('tasks.data', Object.create(null))
   const items = getGlobalState('galleryData.items')
@@ -198,6 +200,7 @@ async function done() {
 
 async function main() {
   try {
+    initConfig()
     readGalleryUrlFromCLI()
     await getGalleryData()
     await prepare()

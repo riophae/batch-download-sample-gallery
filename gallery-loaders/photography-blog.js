@@ -1,36 +1,40 @@
 'use strict'
 
-const u = require('url')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
-const readConfig = require('../utils/read-config')
 const request = require('../utils/request')
+const getFilenameFromUrl = require('../utils/get-filename-from-url')
+const { getGlobalState, setGlobalState } = require('../utils/global-state')
 
 async function getGallery(url) {
-  const config = readConfig()
   const html = await request({ url })
   const $ = cheerio.load(html)
   const title = $('.entry-title-wide h1.item').text().replace(/\bReview\b/, '').trim()
   const images = $('table .exif a').toArray()
     .filter(el => $(el).text().trim() === 'Download Original')
-  const videos = config.downloadSampleMovies
+  const videos = getGlobalState('config.downloadSampleMovies')
     ? $('p.movie-link a').toArray()
     : []
   const items = [ ...images, ...videos ].map(el => $(el).prop('href'))
-  return { title, items: dedupe(items) }
+
+  return {
+    title,
+    items: dedupe(items),
+  }
 }
 
-function getFileNameFromUrl(url) {
-  const { pathname } = u.parse(url)
-  return pathname.split('/').reverse()[0]
-}
-
-module.exports = async galleryUrl => {
-  const data = await getGallery(galleryUrl)
+module.exports = async () => {
+  const inputGalleryUrl = getGlobalState('inputGalleryUrl')
+  const data = await getGallery(inputGalleryUrl)
   const title = data.title + ' (photography-blog)'
   const items = data.items.map(url => ({
-    name: getFileNameFromUrl(url),
+    name: getFilenameFromUrl(url),
     url,
   }))
-  return { galleryUrl, title, items }
+
+  return {
+    galleryUrl: inputGalleryUrl,
+    title,
+    items,
+  }
 }

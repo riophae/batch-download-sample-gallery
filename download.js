@@ -11,6 +11,7 @@ const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
 const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
+const isValidUrl = require('./utils/is-valid-url')
 const { getGlobalState, setGlobalState } = require('./utils/global-state')
 
 const config = getGlobalState('config')
@@ -26,23 +27,27 @@ function update(lines) {
   logUpdate(Array.isArray(lines) ? lines.join('\n') : lines)
 }
 
-function getGalleryUrlFromCLI() {
-  const galleryUrl = process.argv[2]
+function readGalleryUrlFromCLI() {
+  const inputGalleryUrl = process.argv[2]
 
-  if (!galleryUrl) {
+  if (!inputGalleryUrl) {
     throw new Error('Please specify the sample gallery url.')
   }
 
-  setGlobalState('galleryUrl', galleryUrl)
+  if (!isValidUrl(inputGalleryUrl)) {
+    throw new Error(`Unrecognizable input: ${inputGalleryUrl}`)
+  }
+
+  setGlobalState('inputGalleryUrl', inputGalleryUrl)
 }
 
 function getGalleryLoader() {
-  const galleryUrl = getGlobalState('galleryUrl')
+  const inputGalleryUrl = getGlobalState('inputGalleryUrl')
 
-  if (galleryUrl.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
-  if (galleryUrl.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
-  if (galleryUrl.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
-  if (galleryUrl.includes('dcfever.com')) return require('./gallery-loaders/dcfever')
+  if (inputGalleryUrl.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
+  if (inputGalleryUrl.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
+  if (inputGalleryUrl.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
+  if (inputGalleryUrl.includes('dcfever.com')) return require('./gallery-loaders/dcfever')
 
   throw new Error('Unknown website')
 }
@@ -50,9 +55,8 @@ function getGalleryLoader() {
 async function getGalleryData() {
   update('Fetching gallery data...')
 
-  const galleryUrl = getGlobalState('galleryUrl')
   const galleryLoader = getGalleryLoader()
-  const galleryData = await galleryLoader(galleryUrl)
+  const galleryData = await galleryLoader()
 
   setGlobalState('galleryData', galleryData)
 }
@@ -186,7 +190,7 @@ async function done() {
 
 async function main() {
   try {
-    getGalleryUrlFromCLI()
+    readGalleryUrlFromCLI()
     await getGalleryData()
     await prepare()
     await initTasks()

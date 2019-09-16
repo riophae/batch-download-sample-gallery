@@ -33,6 +33,7 @@
     "progress-bar-formatter": "^2.0.1",
     "request": "^2.85.0",
     "request-promise-native": "^1.0.5",
+    "urlish": "^1.0.1",
     "yaku": "^0.19.3"
   }
 }

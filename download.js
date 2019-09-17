@@ -14,6 +14,7 @@ const initConfig = require('./utils/init-config')
 const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
+const writeJson = require('./utils/write-json')
 const { getGlobalState, setGlobalState } = require('./utils/global-state')
 
 const startTime = Date.now()
@@ -116,10 +117,7 @@ async function createTasks() {
     }
   }
 
-  fs.writeFileSync(
-    getGlobalState('tasks.jsonFilePath'),
-    JSON.stringify(tasks, null, 2),
-  )
+  writeJson(getGlobalState('tasks.jsonFilePath'), tasks)
 }
 
 function readTasks() {

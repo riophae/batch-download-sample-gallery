@@ -11,11 +11,13 @@ const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
 const { readConfig } = require('./utils/config')
+const { isMutexLocked, lockMutex } = require('./utils/mutex')
+const { initWaitingList, getWaitingList, isWaitingListEmpty, isInWaitingList, addToWaitingList, removeFromWaitingList, moveToTopOfList } = require('./utils/waiting-list')
 const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
 const writeJson = require('./utils/write-json')
-const { getGlobalState, setGlobalState } = require('./utils/global-state')
+const { getGlobalState, setGlobalState, resetGlobalState } = require('./utils/global-state')
 
 const startTime = Date.now()
 let progressIntervalId
@@ -26,21 +28,9 @@ const bar = new ProgressBarFormatter({
 })
 
 function update(lines) {
-  logUpdate(Array.isArray(lines) ? lines.join('\n') : lines)
-}
+  const message = Array.isArray(lines) ? lines.join('\n') : lines
 
-function readGalleryUrlFromCLI() {
-  const inputGalleryUrl = process.argv[2]
-
-  if (!inputGalleryUrl) {
-    throw new Error('Please specify the sample gallery url.')
-  }
-
-  if (!isValidUrl(inputGalleryUrl)) {
-    throw new Error(`Unrecognizable input: ${inputGalleryUrl}`)
-  }
-
-  setGlobalState('inputGalleryUrl', inputGalleryUrl)
+  logUpdate(message.trim())
 }
 
 function getGalleryLoader() {
@@ -161,6 +151,14 @@ async function checkProgress() {
     ].join(' ')
   })
 
+  const waitingListStatusLines = getWaitingList()
+    .filter(item => item !== getGlobalState('inputGalleryUrl'))
+    .map(item => `- ${item}`)
+
+  if (waitingListStatusLines.length) {
+    waitingListStatusLines.unshift('Waiting:')
+  }
+
   update([
     getGlobalState('displayTitle'),
     '',
@@ -168,6 +166,8 @@ async function checkProgress() {
     '',
     `Overall speed: ${prettyBytes(Number(globalStat.downloadSpeed))}/s`,
     `aria2 RPC interface is listening at http://localhost:${port}/jsonrpc (no secret token)`,
+    '',
+    ...waitingListStatusLines,
   ])
 }
 
@@ -184,27 +184,79 @@ async function done() {
   fs.unlinkSync(getGlobalState('aria2.session.filePath'))
   fs.unlinkSync(getGlobalState('tasks.jsonFilePath'))
 
-  const diff = prettyMs(Date.now() - startTime)
-  update([
-    getGlobalState('displayTitle'),
-    '',
-    `All tasks done in ${diff}.`,
-  ])
+  const inputGalleryUrl = getGlobalState('inputGalleryUrl')
 
-  process.exit(0)
-}
+  removeFromWaitingList(inputGalleryUrl)
 
-async function main() {
-  try {
-    readGalleryUrlFromCLI()
-    await getGalleryData()
-    await prepare()
-    await initTasks()
-    setupRunner()
-  } catch (error) {
-    console.error(error)
-    process.exit(1)
+  if (!isWaitingListEmpty()) {
+    processGallery()
+  } else {
+    const diff = prettyMs(Date.now() - startTime)
+
+    update(`All tasks done in ${diff}.`)
+    process.exit(0)
   }
 }
 
+async function processGallery() {
+  const waitingList = getWaitingList()
+  const inputGalleryUrl = waitingList[0]
+
+  resetGlobalState()
+  setGlobalState('inputGalleryUrl', inputGalleryUrl)
+
+  await getGalleryData()
+  await prepare()
+  await initTasks()
+  setupRunner()
+}
+
+async function main() {
+  await initWaitingList()
+
+  const hasInput = process.argv.length >= 3
+  const inputGalleryUrl = process.argv[2]
+  const isAlreadyInWaitingList = hasInput && isInWaitingList(inputGalleryUrl)
+  const isLocked = isMutexLocked()
+
+  if (hasInput && !isValidUrl(inputGalleryUrl)) {
+    throw new Error(`Unrecognizable input: ${inputGalleryUrl}`)
+  }
+
+  if (hasInput && !isAlreadyInWaitingList) {
+    addToWaitingList(inputGalleryUrl)
+  }
+
+  if (hasInput && !isLocked) {
+    moveToTopOfList(inputGalleryUrl)
+  }
+
+  if (hasInput && isLocked) {
+    if (isAlreadyInWaitingList) {
+      logUpdate('The gallery is already in the waiting list.')
+    } else {
+      logUpdate('Another instance is running. Added the gallery to the waiting list.')
+    }
+  }
+
+  if (!hasInput && isLocked) {
+    logUpdate('Another instance is running.')
+  }
+
+  if (!hasInput && !isLocked && isWaitingListEmpty()) {
+    throw new Error('Please specify the sample gallery url.')
+  }
+
+  if (!isLocked && !isWaitingListEmpty()) {
+    lockMutex()
+    processGallery()
+  } else {
+    process.exit(0)
+  }
+}
 main()
+
+process.on('unhandledRejection', error => {
+  console.error(error)
+  process.exit(1)
+})

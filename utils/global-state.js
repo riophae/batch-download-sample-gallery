@@ -6,6 +6,7 @@ const dotProp = require('dot-prop')
 let globalState
 
 function resetGlobalState() {
+  // TODO: 恢复 port
   globalState = deepSeal({
     inputGalleryUrl: '',
     galleryData: {

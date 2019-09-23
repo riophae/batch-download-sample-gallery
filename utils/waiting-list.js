@@ -42,6 +42,7 @@ function readWaitingList() {
       try {
         waitingList = JSON.parse(fileContent)
       } catch (error) {
+        console.error(error)
         throw new Error('Failed to read the waiting list.')
       }
     }

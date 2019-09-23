@@ -2,7 +2,7 @@
 
 const execa = require('execa')
 const Aria2 = require('aria2')
-const getPort = require('get-port')
+const getPort = require('just-once')(require('get-port'))
 const portUsed = require('port-used')
 const compact = require('@extra-array/compact')
 const { readConfig } = require('./config')

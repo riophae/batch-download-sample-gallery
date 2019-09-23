@@ -1,12 +1,11 @@
 'use strict'
 
 const request = require('request-promise-native')
-const { getGlobalState } = require('./global-state')
+const { readConfig } = require('./config')
 
 module.exports = opts => {
-  const config = getGlobalState('config')
-  const proxy = config.enableProxy(opts.uri || opts.url)
-    ? config.proxy
+  const proxy = readConfig('enableProxy')(opts.uri || opts.url)
+    ? readConfig('proxy')
     : null
 
   return request({ proxy, ...opts })

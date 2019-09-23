@@ -3,14 +3,24 @@
 const fs = require('fs')
 const path = require('path')
 const deepmerge = require('deepmerge')
-const { setGlobalState } = require('./global-state')
+const dotProp = require('dot-prop')
 
-module.exports = () => {
+let config
+
+function initConfig() {
   const userConfigPath = path.join(__dirname, '../config.js')
   const defaultConfigPath = path.join(__dirname, '../config.default.js')
   const userConfig = fs.existsSync(userConfigPath) ? require(userConfigPath) : {}
   const defaultConfig = require(defaultConfigPath)
-  const finalConfig = deepmerge(defaultConfig, userConfig)
 
-  setGlobalState('config', finalConfig)
+  config = deepmerge(defaultConfig, userConfig)
+}
+initConfig()
+
+function readConfig(key) {
+  return dotProp.get(config, key)
+}
+
+module.exports = {
+  readConfig,
 }

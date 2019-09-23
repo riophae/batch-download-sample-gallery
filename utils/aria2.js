@@ -5,6 +5,7 @@ const Aria2 = require('aria2')
 const getPort = require('get-port')
 const portUsed = require('port-used')
 const compact = require('@extra-array/compact')
+const { readConfig } = require('./config')
 const { getGlobalState, setGlobalState } = require('./global-state')
 const untilProcessExits = require('./until-process-exits')
 
@@ -15,15 +16,14 @@ let aria2server
 let aria2client
 
 async function startAria2() {
-  const config = getGlobalState('config')
-  const port = config.aria2.port || await getPort()
+  const port = readConfig('aria2.port') || await getPort()
 
   aria2server = execa('aria2c', compact([
     '--enable-rpc',
     '--rpc-allow-origin-all',
     `--rpc-listen-port=${port}`,
-    `--max-concurrent-downloads=${config.aria2.concurrent}`,
-    `--split=${config.aria2.split}`,
+    `--max-concurrent-downloads=${readConfig('aria2.concurrent')}`,
+    `--split=${readConfig('aria2.split')}`,
     '--conditional-get',
     '--remote-time',
     getGlobalState('aria2.session.isExists')

@@ -10,7 +10,7 @@ const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
-const initConfig = require('./utils/init-config')
+const { readConfig } = require('./utils/config')
 const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
@@ -68,11 +68,10 @@ async function getGalleryData() {
 }
 
 async function prepare() {
-  const config = getGlobalState('config')
   const galleryData = getGlobalState('galleryData')
 
   setGlobalState('displayTitle', chalk.bold('Gallery: ' + galleryData.title))
-  setGlobalState('outputDir', path.join(config.outputDir, filenamify(galleryData.title)))
+  setGlobalState('outputDir', path.join(readConfig('outputDir'), filenamify(galleryData.title)))
   setGlobalState('aria2.session.filePath', path.join(getGlobalState('outputDir'), 'aria2.session'))
   setGlobalState('aria2.session.isExists', fs.existsSync(getGlobalState('aria2.session.filePath')))
   setGlobalState('tasks.jsonFilePath', path.join(getGlobalState('outputDir'), 'tasks.json'))
@@ -92,7 +91,6 @@ function initTasks() {
 }
 
 async function createTasks() {
-  const config = getGlobalState('config')
   const aria2client = getGlobalState('aria2.instance')
   const tasks = setGlobalState('tasks.data', Object.create(null))
   const items = getGlobalState('galleryData.items')
@@ -100,13 +98,13 @@ async function createTasks() {
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
     const filename = filenamify(item.name)
-    const isProxyEnabled = config.enableProxy(item.url)
+    const isProxyEnabled = readConfig('enableProxy')(item.url)
     const gid = await aria2client.call('addUri', [ item.url ], {
       'dir': getGlobalState('outputDir'),
       'out': filename,
       'referer': getGlobalState('aria2.referer'),
       'all-proxy': isProxyEnabled
-        ? config.proxy
+        ? readConfig('proxy')
         : null,
     })
 
@@ -198,7 +196,6 @@ async function done() {
 
 async function main() {
   try {
-    initConfig()
     readGalleryUrlFromCLI()
     await getGalleryData()
     await prepare()

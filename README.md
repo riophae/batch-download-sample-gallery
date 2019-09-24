@@ -21,7 +21,7 @@ Batch download sample images from digital camera review websites.
 ```bash
 git clone https://github.com/riophae/batch-download-sample-gallery.git
 cd batch-download-sample-gallery
-npm install
+npm install --production
 node download <Gallery URL>
 # per default the downloaded image files will be stored at output/<Gallery Name>/ directory
 ```

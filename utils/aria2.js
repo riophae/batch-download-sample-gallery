@@ -53,14 +53,12 @@ async function startAria2() {
 
 async function stopAria2() {
   await aria2client.close()
-  // eslint-disable-next-line require-atomic-updates
   aria2client = null
   setGlobalState('aria2.instance', null)
   setGlobalState('aria2.port', -1)
 
   aria2server.cancel()
   await untilProcessExits(aria2server.pid)
-  // eslint-disable-next-line require-atomic-updates
   aria2server = null
 }
 

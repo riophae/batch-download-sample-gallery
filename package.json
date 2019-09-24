@@ -4,12 +4,13 @@
   "license": "MIT",
   "scripts": {
     "test": "npm run lint",
-    "lint": "eslint --fix ."
+    "lint": "eslint ."
   },
   "devDependencies": {
     "eslint": "^6.2.2",
-    "eslint-config-riophae": "^0.8.0",
-    "eslint-plugin-import": "^2.14.0"
+    "eslint-config-riophae": "^0.9.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-unicorn": "^11.0.2"
   },
   "dependencies": {
     "@extra-array/compact": "^1.1.7",

@@ -85,8 +85,7 @@ async function createTasks() {
   const tasks = setGlobalState('tasks.data', Object.create(null))
   const items = getGlobalState('galleryData.items')
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i]
+  for (const [ i, item ] of items.entries()) {
     const filename = filenamify(item.name)
     const isProxyEnabled = readConfig('enableProxy')(item.url)
     const gid = await aria2client.call('addUri', [ item.url ], {

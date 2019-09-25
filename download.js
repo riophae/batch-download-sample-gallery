@@ -60,7 +60,6 @@ async function getGalleryData() {
 async function prepare() {
   const galleryData = getGlobalState('galleryData')
 
-  setGlobalState('displayTitle', chalk.bold('Gallery: ' + galleryData.title))
   setGlobalState('outputDir', path.join(readConfig('outputDir'), filenamify(galleryData.title)))
   setGlobalState('aria2.session.filePath', path.join(getGlobalState('outputDir'), 'aria2.session'))
   setGlobalState('aria2.session.isExists', fs.existsSync(getGlobalState('aria2.session.filePath')))
@@ -159,12 +158,12 @@ async function checkProgress() {
   }
 
   update([
-    getGlobalState('displayTitle'),
+    `Gallery: ${chalk.bold(galleryData.title)}`,
     '',
     ...taskStatusLines,
     '',
-    `Overall speed: ${prettyBytes(Number(globalStat.downloadSpeed))}/s`,
-    `aria2 RPC interface is listening at http://localhost:${port}/jsonrpc (no secret token)`,
+    `Overall speed: ${chalk.bold(prettyBytes(Number(globalStat.downloadSpeed)) + '/s')}`,
+    `aria2 RPC interface is listening at ${chalk.bold(`http://localhost:${port}/jsonrpc`)} (no secret token)`,
     '',
     ...waitingListStatusLines,
   ])

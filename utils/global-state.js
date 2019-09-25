@@ -12,7 +12,6 @@ function resetGlobalState() {
       title: '',
       items: [],
     },
-    displayTitle: '',
     aria2: {
       instance: null,
       port: -1,

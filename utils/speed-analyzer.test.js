@@ -3,7 +3,7 @@
 
 'use strict'
 
-const sleep = require('yaku/lib/sleep')
+const sleep = require('p-sleep')
 const SpeedAnalyzer = require('./speed-analyzer')
 
 async function test1(asc) {

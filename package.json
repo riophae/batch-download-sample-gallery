@@ -32,6 +32,7 @@
     "left-pad": "^1.3.0",
     "log-update": "^3.2.0",
     "make-dir": "^3.0.0",
+    "p-sleep": "^1.1.0",
     "port-used": "^2.0.8",
     "pretty-bytes": "^5.1.0",
     "pretty-ms": "^5.0.0",
@@ -40,7 +41,6 @@
     "request": "^2.85.0",
     "request-promise-native": "^1.0.5",
     "urlish": "^1.0.1",
-    "yaku": "^0.19.3",
     "yallist": "^3.1.0"
   }
 }

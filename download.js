@@ -188,7 +188,7 @@ async function checkProgress() {
     ...taskStatusLines,
     '',
     `Overall speed: ${chalk.bold(prettyBytes(Number(globalStat.downloadSpeed)) + '/s')}`,
-    `Overall progress: [${chalk.bold(bar.format(finished / total))}] ${finished} finished, ${total - finished} remaining`,
+    `Overall progress: [${chalk.bold(bar.format(finished / total))}] ${finished} completed, ${total - finished} remaining`,
     `aria2 RPC interface is listening at ${chalk.bold(aria2client.url('http'))} (no secret token)`,
     '',
     ...waitingListStatusLines,

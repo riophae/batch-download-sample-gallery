@@ -34,19 +34,19 @@ class SpeedAnalyzer {
   }
 
   add({ downloadSpeed, completedLength }) {
-    const is = new TimeSlot({ downloadSpeed, completedLength })
+    const ts = new TimeSlot({ downloadSpeed, completedLength })
     const list = this._list
 
     if (list.length > 0) {
-      if (is.time - list.tail.value.time > MAX_GAP_BETWEEN_TIME_SLOTS) {
+      if (ts.time - list.tail.value.time > MAX_GAP_BETWEEN_TIME_SLOTS) {
         this._clear()
-      } else if (is.time - list.head.value.time > (WINDOW_TIME + MAX_GAP_BETWEEN_TIME_SLOTS / 10)) {
+      } else if (ts.time - list.head.value.time > (WINDOW_TIME + MAX_GAP_BETWEEN_TIME_SLOTS / 10)) {
         this._hasEnoughSamples = true
         this._removeStaleTimeSlots()
       }
     }
 
-    list.push(is)
+    list.push(ts)
   }
 
   hasEnoughSamples() {

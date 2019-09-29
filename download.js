@@ -16,11 +16,13 @@ const { initWaitingList, getWaitingList, isWaitingListEmpty, isInWaitingList, ad
 const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
+const SpeedAnalyzer = require('./utils/speed-analyzer')
 const writeJson = require('./utils/write-json')
 const { getGlobalState, setGlobalState, resetGlobalState } = require('./utils/global-state')
 
 const startTime = Date.now()
 let progressIntervalId
+let speedIntervalId
 const bar = new ProgressBarFormatter({
   complete: '=',
   incomplete: ' ',
@@ -98,8 +100,10 @@ async function createTasks() {
 
     tasks[gid] = {
       index: i + 1,
+      gid,
       filename,
       isProxyEnabled,
+      speedAnalyzer: null,
     }
   }
 
@@ -110,6 +114,21 @@ function readTasks() {
   const tasks = setGlobalState('tasks.data', Object.create(null))
 
   Object.assign(tasks, require(getGlobalState('tasks.jsonFilePath')))
+}
+
+function initSpeedAnalyzer() {
+  const tasks = getGlobalState('tasks.data')
+
+  for (const task of Object.values(tasks)) {
+    task.speedAnalyzer = new SpeedAnalyzer()
+  }
+}
+
+async function retryTask(task) {
+  const aria2client = getGlobalState('aria2.instance')
+
+  await aria2client.call('pause', task.gid)
+  await aria2client.call('unpause', task.gid)
 }
 
 async function checkProgress() {
@@ -137,6 +156,12 @@ async function checkProgress() {
     const proxyIndicator = task.isProxyEnabled
       ? chalk.red('*')
       : ' '
+
+    if (task.speedAnalyzer.hasEnoughSamples()) {
+      if (task.speedAnalyzer.getAverageDownloadSpeed() < 256 * 1024) {
+        retryTask(task)
+      }
+    }
 
     return [
       chalk.gray('Downloading:'),
@@ -169,14 +194,32 @@ async function checkProgress() {
   ])
 }
 
+async function trackDownloadSpeed() {
+  const aria2client = getGlobalState('aria2.instance')
+  const tasks = getGlobalState('tasks.data')
+  const activeDownloads = await aria2client.call('tellActive')
+
+  for (const download of activeDownloads) {
+    const task = tasks[download.gid]
+
+    task.speedAnalyzer.add({
+      downloadSpeed: Number(download.downloadSpeed),
+      completedLength: Number(download.completedLength),
+    })
+  }
+}
+
 function setupRunner() {
   checkProgress()
+  trackDownloadSpeed()
 
   progressIntervalId = setInterval(checkProgress, 1000)
+  speedIntervalId = setInterval(trackDownloadSpeed, 250)
 }
 
 async function done() {
   clearInterval(progressIntervalId)
+  clearInterval(speedIntervalId)
   await stopAria2()
 
   fs.unlinkSync(getGlobalState('aria2.session.filePath'))
@@ -206,6 +249,7 @@ async function processGallery() {
   await getGalleryData()
   await prepare()
   await initTasks()
+  initSpeedAnalyzer()
   setupRunner()
 }
 

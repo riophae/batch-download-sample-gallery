@@ -134,7 +134,6 @@ async function retryTask(task) {
 async function checkProgress() {
   const galleryData = getGlobalState('galleryData')
   const aria2client = getGlobalState('aria2.instance')
-  const port = getGlobalState('aria2.port')
   const tasks = getGlobalState('tasks.data')
   const activeDownloads = await aria2client.call('tellActive')
   const globalStat = await aria2client.call('getGlobalStat')
@@ -188,7 +187,7 @@ async function checkProgress() {
     ...taskStatusLines,
     '',
     `Overall speed: ${chalk.bold(prettyBytes(Number(globalStat.downloadSpeed)) + '/s')}`,
-    `aria2 RPC interface is listening at ${chalk.bold(`http://localhost:${port}/jsonrpc`)} (no secret token)`,
+    `aria2 RPC interface is listening at ${chalk.bold(aria2client.url('http'))} (no secret token)`,
     '',
     ...waitingListStatusLines,
   ])

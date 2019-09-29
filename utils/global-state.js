@@ -14,7 +14,6 @@ function resetGlobalState() {
     },
     aria2: {
       instance: null,
-      port: -1,
       session: {
         filePath: '',
         isExists: false,

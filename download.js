@@ -127,6 +127,7 @@ function initSpeedAnalyzer() {
 async function retryTask(task) {
   const aria2client = getGlobalState('aria2.instance')
 
+  task.speedAnalyzer.clear()
   await aria2client.call('pause', task.gid)
   await aria2client.call('unpause', task.gid)
 }

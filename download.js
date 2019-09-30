@@ -137,8 +137,8 @@ async function checkProgress() {
   const tasks = getGlobalState('tasks.data')
   const activeDownloads = await aria2client.call('tellActive')
   const globalStat = await aria2client.call('getGlobalStat')
-  const total = galleryData.items.length
-  const finished = total - globalStat.numActive - globalStat.numWaiting
+  const numberTotal = galleryData.items.length
+  const numberCompleted = numberTotal - globalStat.numActive - globalStat.numWaiting
 
   if (!Number(globalStat.numActive) && !Number(globalStat.numWaiting)) {
     return done()
@@ -165,7 +165,7 @@ async function checkProgress() {
 
     return [
       chalk.gray('Downloading:'),
-      chalk.green(`[${leftPad(task.index, total.toString().length)}/${total}]`),
+      chalk.green(`[${leftPad(task.index, numberTotal.toString().length)}/${numberTotal}]`),
       '[' + chalk.gray(bar.format(percent)) + ']',
       leftPad(totalLength ? prettyBytes(totalLength) : '', 12),
       leftPad(downloadSpeed ? `${prettyBytes(downloadSpeed)}/s` : '', 12),
@@ -188,7 +188,7 @@ async function checkProgress() {
     ...taskStatusLines,
     '',
     `Overall speed: ${chalk.bold(prettyBytes(Number(globalStat.downloadSpeed)) + '/s')}`,
-    `Overall progress: [${chalk.bold(bar.format(finished / total))}] ${finished} completed, ${total - finished} remaining`,
+    `Overall progress: [${chalk.bold(bar.format(numberCompleted / numberTotal))}] ${numberCompleted} completed, ${numberTotal - numberCompleted} remaining`,
     `aria2 RPC interface is listening at ${chalk.bold(aria2client.url('http'))} (no secret token)`,
     '',
     ...waitingListStatusLines,

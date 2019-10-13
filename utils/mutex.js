@@ -6,29 +6,27 @@ const exitHook = require('exit-hook')
 
 const LOCK_FILE_PATH = path.join(__dirname, '../lock')
 
-function isMutexLocked() {
-  return fs.existsSync(LOCK_FILE_PATH)
+const Mutex = {
+  isLocked() {
+    return fs.existsSync(LOCK_FILE_PATH)
+  },
+
+  lock() {
+    if (Mutex.isLocked()) {
+      throw new Error('Attempt to lock mutex that is already locked.')
+    }
+
+    fs.writeFileSync(LOCK_FILE_PATH, '')
+    exitHook(Mutex.release)
+  },
+
+  release() {
+    if (!Mutex.isLocked()) {
+      throw new Error('Attempt to release mutex that was not locked.')
+    }
+
+    fs.unlinkSync(LOCK_FILE_PATH)
+  },
 }
 
-function lockMutex() {
-  if (isMutexLocked()) {
-    throw new Error('Attempt to lock mutex that is already locked.')
-  }
-
-  fs.writeFileSync(LOCK_FILE_PATH, '')
-  exitHook(releaseMutex)
-}
-
-function releaseMutex() {
-  if (!isMutexLocked()) {
-    throw new Error('Attempt to release mutex that was not locked.')
-  }
-
-  fs.unlinkSync(LOCK_FILE_PATH)
-}
-
-module.exports = {
-  isMutexLocked,
-  lockMutex,
-  releaseMutex,
-}
+module.exports = Mutex

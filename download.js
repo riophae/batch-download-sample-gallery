@@ -11,8 +11,8 @@ const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
 const { readConfig } = require('./utils/config')
-const { isMutexLocked, lockMutex } = require('./utils/mutex')
-const { initWaitingList, getWaitingList, isWaitingListEmpty, isInWaitingList, addToWaitingList, removeFromWaitingList, moveToTopOfList } = require('./utils/waiting-list')
+const Mutex = require('./utils/mutex')
+const WaitingList = require('./utils/waiting-list')
 const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
@@ -175,7 +175,7 @@ async function checkProgress() {
     ].join(' ')
   })
 
-  const waitingListStatusLines = getWaitingList()
+  const waitingListStatusLines = WaitingList.get()
     .filter(item => item !== getGlobalState('inputGalleryUrl'))
     .map(item => `- ${item}`)
 
@@ -229,9 +229,9 @@ async function done() {
 
   const inputGalleryUrl = getGlobalState('inputGalleryUrl')
 
-  removeFromWaitingList(inputGalleryUrl)
+  WaitingList.remove(inputGalleryUrl)
 
-  if (!isWaitingListEmpty()) {
+  if (!WaitingList.isEmpty()) {
     processGallery()
   } else {
     const diff = prettyMs(Date.now() - startTime)
@@ -242,8 +242,7 @@ async function done() {
 }
 
 async function processGallery() {
-  const waitingList = getWaitingList()
-  const inputGalleryUrl = waitingList[0]
+  const inputGalleryUrl = WaitingList.get()[0]
 
   resetGlobalState()
   setGlobalState('inputGalleryUrl', inputGalleryUrl)
@@ -256,23 +255,23 @@ async function processGallery() {
 }
 
 async function main() {
-  await initWaitingList()
+  await WaitingList.init()
 
   const hasInput = process.argv.length >= 3
   const inputGalleryUrl = process.argv[2]
-  const isAlreadyInWaitingList = hasInput && isInWaitingList(inputGalleryUrl)
-  const isLocked = isMutexLocked()
+  const isAlreadyInWaitingList = hasInput && WaitingList.isInList(inputGalleryUrl)
+  const isLocked = Mutex.isLocked()
 
   if (hasInput && !isValidUrl(inputGalleryUrl)) {
     throw new Error(`Unrecognizable input: ${inputGalleryUrl}`)
   }
 
   if (hasInput && !isAlreadyInWaitingList) {
-    addToWaitingList(inputGalleryUrl)
+    WaitingList.add(inputGalleryUrl)
   }
 
   if (hasInput && !isLocked) {
-    moveToTopOfList(inputGalleryUrl)
+    WaitingList.moveToTop(inputGalleryUrl)
   }
 
   if (hasInput && isLocked) {
@@ -287,12 +286,12 @@ async function main() {
     logUpdate('Another instance is running.')
   }
 
-  if (!hasInput && !isLocked && isWaitingListEmpty()) {
+  if (!hasInput && !isLocked && WaitingList.isEmpty()) {
     throw new Error('Please specify the sample gallery url.')
   }
 
-  if (!isLocked && !isWaitingListEmpty()) {
-    lockMutex()
+  if (!isLocked && !WaitingList.isEmpty()) {
+    Mutex.lock()
     processGallery()
   } else {
     process.exit(0)

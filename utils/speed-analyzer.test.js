@@ -1,53 +1,130 @@
-/* eslint-disable no-unused-vars */
 /* eslint-disable no-console */
 
 'use strict'
 
+const test = require('ava')
 const sleep = require('p-sleep')
+const inRange = require('lodash/inRange')
 const SpeedAnalyzer = require('./speed-analyzer')
 
-async function test1(asc) {
+async function run(speedAnalyzer, times, speedFn, interval) {
   let i = 0
+  let accumulated = 0
+  let lastTime = Date.now() - interval
 
-  while (i++ < 24) {
-    asc.add({ downloadSpeed: 1000 })
-    await sleep(500)
+  while (i++ < times) {
+    const speed = speedFn()
+    const timeActuallyPassed = Date.now() - lastTime
+    const increment = speed * (timeActuallyPassed / 1000)
+
+    speedAnalyzer.add({
+      downloadSpeed: speed,
+      completedLength: accumulated + increment,
+    })
+
+    accumulated += increment
+    lastTime = Date.now()
+
+    await sleep(interval)
   }
 }
 
-async function test2(asc) {
-  let i = 0
-
-  while (i++ < 24) {
-    asc.add({ downloadSpeed: Math.random() * 1000 })
-    await sleep(500)
-  }
+function isSpeedRoughlyEqual(actual, expected) {
+  return Math.abs(actual - expected) / expected < 0.01
 }
 
-async function test3(asc) {
-  let i = 0
+test('most basic', async t => {
+  const windowTime = 2000
+  const interval = 50
+  const maxGapBetweenTimeSlots = Math.round(interval * 1.5)
+  const times = Math.round(windowTime / interval) + 1
+  const speedAnalyzer = new SpeedAnalyzer({
+    windowTime,
+    maxGapBetweenTimeSlots,
+  })
+  const speed = 1000
 
-  while (i++ < 5) {
-    asc.add({ downloadSpeed: Math.random() * 1000 })
-    await sleep(500)
-  }
-}
+  await run(
+    speedAnalyzer,
+    times,
+    () => speed,
+    interval,
+  )
 
-async function test4(asc) {
-  let i = 0
+  t.true(speedAnalyzer.hasEnoughSamples())
+  t.true(
+    isSpeedRoughlyEqual(speed, speedAnalyzer.getAverageDownloadSpeed()),
+    `Actual speed: ${speedAnalyzer.getAverageDownloadSpeed()} / Expected speed: ${speed}`,
+  )
+})
 
-  while (i++ < 24) {
-    asc.add({ downloadSpeed: Math.random() * 1000 })
-    await sleep(1100)
-  }
-}
+test('variable speed', async t => {
+  const windowTime = 2000
+  const interval = 50
+  const maxGapBetweenTimeSlots = Math.round(interval * 1.5)
+  const times = Math.round(windowTime / interval) + 1
+  const speedAnalyzer = new SpeedAnalyzer({
+    windowTime,
+    maxGapBetweenTimeSlots,
+  })
+  const maxSpeed = 1000
 
-async function test() {
-  const asc = new SpeedAnalyzer()
+  await run(
+    speedAnalyzer,
+    times,
+    () => maxSpeed * Math.random(),
+    interval,
+  )
 
-  await test1(asc)
+  const averageSpeed = speedAnalyzer.getAverageDownloadSpeed()
 
-  console.log(asc.hasEnoughSamples())
-  console.log(asc.getAverageDownloadSpeed())
-}
-test()
+  t.true(speedAnalyzer.hasEnoughSamples())
+  t.true(
+    inRange(averageSpeed, 0, maxSpeed),
+    `Actual average speed ${averageSpeed} is not in range (0, ${maxSpeed})`,
+  )
+})
+
+test('insufficient samples', async t => {
+  const windowTime = 2000
+  const interval = 50
+  const maxGapBetweenTimeSlots = Math.round(interval * 1.5)
+  const times = Math.round(windowTime / interval / 2)
+  const speedAnalyzer = new SpeedAnalyzer({
+    windowTime,
+    maxGapBetweenTimeSlots,
+  })
+  const speed = 1000
+
+  await run(
+    speedAnalyzer,
+    times,
+    () => speed,
+    interval,
+  )
+
+  t.false(speedAnalyzer.hasEnoughSamples())
+  t.is(speedAnalyzer.getAverageDownloadSpeed(), NaN)
+})
+
+test('too wide gap', async t => {
+  const windowTime = 2000
+  const interval = 50
+  const maxGapBetweenTimeSlots = Math.round(interval * 0.75)
+  const times = Math.round(windowTime / interval) + 1
+  const speedAnalyzer = new SpeedAnalyzer({
+    windowTime,
+    maxGapBetweenTimeSlots,
+  })
+  const speed = 1000
+
+  await run(
+    speedAnalyzer,
+    times,
+    () => speed,
+    interval,
+  )
+
+  t.false(speedAnalyzer.hasEnoughSamples())
+  t.is(speedAnalyzer.getAverageDownloadSpeed(), NaN)
+})

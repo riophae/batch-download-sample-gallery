@@ -3,14 +3,16 @@
   "author": "Riophae Lee <riophaelee@gmail.com> (https://github.com/riophae)",
   "license": "MIT",
   "scripts": {
-    "test": "npm run lint",
+    "test": "npm run lint && ava",
     "lint": "eslint ."
   },
   "devDependencies": {
+    "ava": "^2.4.0",
     "eslint": "^6.2.2",
     "eslint-config-riophae": "^0.9.0",
     "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-unicorn": "^11.0.2"
+    "eslint-plugin-unicorn": "^11.0.2",
+    "lodash": "^4.17.15"
   },
   "dependencies": {
     "@extra-array/compact": "^1.1.7",

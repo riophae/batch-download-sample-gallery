@@ -2,9 +2,6 @@
 
 const LinkedList = require('./linked-list')
 
-const WINDOW_TIME = 10 * 1000
-const MAX_GAP_BETWEEN_TIME_SLOTS = 1000
-
 class TimeSlot {
   constructor({ downloadSpeed, completedLength }) {
     this.time = Date.now()
@@ -14,55 +11,95 @@ class TimeSlot {
 }
 
 class SpeedAnalyzer {
-  constructor() {
+  constructor(opts) {
+    const { windowTime, maxGapBetweenTimeSlots } = opts || {}
+
     this._list = new LinkedList()
-    this._hasEnoughSamples = false
+    this._windowTime = windowTime || 10 * 1000
+    this._maxGapBetweenSamples = maxGapBetweenTimeSlots || 1000
   }
 
-  _clear() {
-    this._list.clear()
-    this._hasEnoughSamples = false
+  get _hasData() {
+    return this._list.length > 0
+  }
+
+  get _head() {
+    return this._hasData
+      ? this._list.head.value
+      : null
+  }
+
+  get _tail() {
+    return this._hasData
+      ? this._list.tail.value
+      : null
   }
 
   _removeStaleTimeSlots() {
-    const now = Date.now()
-    const list = this._list
-
-    while (list.length && now - list.head.value.time > WINDOW_TIME) {
-      list.shift()
+    if (this._hasData) {
+      if (this._isGapTooWide(this._tail.time, Date.now())) {
+        this.clear()
+      } else {
+        while (this._hasData && !this._isInTimeWindow(this._head)) {
+          this._list.shift()
+        }
+      }
     }
+  }
+
+  _isInTimeWindow(ts) {
+    return Date.now() - ts.time <= this._windowTime
+  }
+
+  _isGapTooWide(a, b) {
+    return Math.abs(a - b) > this._maxGapBetweenSamples
   }
 
   add({ downloadSpeed, completedLength }) {
     const ts = new TimeSlot({ downloadSpeed, completedLength })
-    const list = this._list
 
-    if (list.length > 0) {
-      if (ts.time - list.tail.value.time > MAX_GAP_BETWEEN_TIME_SLOTS) {
-        this._clear()
-      } else if (ts.time - list.head.value.time > (WINDOW_TIME + MAX_GAP_BETWEEN_TIME_SLOTS / 10)) {
-        this._hasEnoughSamples = true
-        this._removeStaleTimeSlots()
-      }
-    }
+    this._removeStaleTimeSlots()
+    this._list.push(ts)
+  }
 
-    list.push(ts)
+  clear() {
+    this._list.clear()
   }
 
   hasEnoughSamples() {
-    return this._hasEnoughSamples
+    const timeSlots = this._list.toArray()
+    let lastTime = Date.now()
+
+    while (timeSlots.length > 0) {
+      const ts = timeSlots.pop()
+
+      if (this._isGapTooWide(ts.time, lastTime)) {
+        return false
+      }
+
+      if (!this._isInTimeWindow(ts)) {
+        return true
+      }
+
+      lastTime = ts.time
+    }
+
+    return false
   }
 
   getAverageDownloadSpeed() {
-    const now = Date.now()
-    const timeSlots = [ ...this._list ].filter(ts => now - ts.time <= WINDOW_TIME)
-    const num = timeSlots.length
-    const average = timeSlots.reduce(
-      (sum, ts) => sum + (ts.downloadSpeed / num),
-      0,
-    )
+    if (!this.hasEnoughSamples()) {
+      return NaN
+    }
 
-    return average
+    const timeSlots = this._list.toArray().filter(ts => this._isInTimeWindow(ts))
+    const start = timeSlots.shift()
+    const end = timeSlots.pop()
+    const downloadedLength = end.completedLength - start.completedLength
+    const duration = (end.time - start.time) / 1000
+    const averageSpeed = downloadedLength / duration
+
+    return averageSpeed
   }
 }
 

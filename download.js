@@ -124,6 +124,17 @@ function initSpeedAnalyzer() {
   }
 }
 
+function sortDownloads(activeDownloads) {
+  const tasks = getGlobalState('tasks.data')
+
+  return activeDownloads.sort((a, b) => {
+    const indexA = tasks[a.gid].index
+    const indexB = tasks[b.gid].index
+
+    return indexA - indexB
+  })
+}
+
 async function retryTask(task) {
   const aria2client = getGlobalState('aria2.instance')
 
@@ -145,7 +156,7 @@ async function checkProgress() {
     return done()
   }
 
-  const taskStatusLines = activeDownloads.map(download => {
+  const taskStatusLines = sortDownloads(activeDownloads).map(download => {
     const task = tasks[download.gid]
     const totalLength = Number(download.totalLength)
     const completedLength = Number(download.completedLength)

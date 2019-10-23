@@ -17,6 +17,7 @@ let aria2client
 
 async function startAria2() {
   const port = readConfig('aria2.port') || await getPort()
+  const diskCache = readConfig('aria2.diskCache')
 
   aria2server = execa('aria2c', compact([
     '--enable-rpc',
@@ -24,6 +25,11 @@ async function startAria2() {
     `--rpc-listen-port=${port}`,
     `--max-concurrent-downloads=${readConfig('aria2.concurrent')}`,
     `--split=${readConfig('aria2.split')}`,
+    `--max-download-limit=${readConfig('aria2.speedLimit')}`,
+    `--max-overall-download-limit=${readConfig('aria2.overallSpeedLimit')}`,
+    diskCache
+      ? `--disk-cache=${diskCache}`
+      : null,
     '--conditional-get',
     '--remote-time',
     getGlobalState('aria2.session.isExists')

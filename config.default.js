@@ -12,5 +12,9 @@ module.exports = {
     // port: 3456,
     concurrent: 3,
     split: 1,
+    // Speed examples: 0, 500KB, 2MB
+    speedLimit: '0',
+    overallSpeedLimit: '0',
+    // diskCache: '16M',
   },
 }

@@ -13,12 +13,12 @@ const leftPad = require('left-pad')
 const { readConfig } = require('./utils/config')
 const Mutex = require('./utils/mutex')
 const WaitingList = require('./utils/waiting-list')
+const GlobalState = require('./utils/global-state')
 const { startAria2, stopAria2 } = require('./utils/aria2')
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
 const SpeedAnalyzer = require('./utils/speed-analyzer')
 const writeJson = require('./utils/write-json')
-const { getGlobalState, setGlobalState, resetGlobalState } = require('./utils/global-state')
 
 const startTime = Date.now()
 let progressIntervalId
@@ -36,7 +36,7 @@ function update(lines) {
 }
 
 function getGalleryLoader() {
-  const inputGalleryUrl = getGlobalState('inputGalleryUrl')
+  const inputGalleryUrl = GlobalState.get('inputGalleryUrl')
 
   if (inputGalleryUrl.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
   if (inputGalleryUrl.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
@@ -53,46 +53,46 @@ async function getGalleryData() {
 
   await galleryLoader()
 
-  const { title, items } = getGlobalState('galleryData')
+  const { title, items } = GlobalState.get('galleryData')
 
   assert(typeof title === 'string' && title.length)
   assert(Array.isArray(items) && items.length)
 }
 
 async function prepare() {
-  const galleryData = getGlobalState('galleryData')
+  const galleryData = GlobalState.get('galleryData')
 
-  setGlobalState('outputDir', path.join(readConfig('outputDir'), filenamify(galleryData.title)))
-  setGlobalState('aria2.session.filePath', path.join(getGlobalState('outputDir'), 'aria2.session'))
-  setGlobalState('aria2.session.isExists', fs.existsSync(getGlobalState('aria2.session.filePath')))
-  setGlobalState('tasks.jsonFilePath', path.join(getGlobalState('outputDir'), 'tasks.json'))
+  GlobalState.set('outputDir', path.join(readConfig('outputDir'), filenamify(galleryData.title)))
+  GlobalState.set('aria2.session.filePath', path.join(GlobalState.get('outputDir'), 'aria2.session'))
+  GlobalState.set('aria2.session.isExists', fs.existsSync(GlobalState.get('aria2.session.filePath')))
+  GlobalState.set('tasks.jsonFilePath', path.join(GlobalState.get('outputDir'), 'tasks.json'))
 
-  if (!getGlobalState('aria2.referer')) {
-    setGlobalState('aria2.referer', getGlobalState('inputGalleryUrl'))
+  if (!GlobalState.get('aria2.referer')) {
+    GlobalState.set('aria2.referer', GlobalState.get('inputGalleryUrl'))
   }
 
   await startAria2()
-  await makeDir(getGlobalState('outputDir'))
+  await makeDir(GlobalState.get('outputDir'))
 }
 
 function initTasks() {
-  return getGlobalState('aria2.session.isExists')
+  return GlobalState.get('aria2.session.isExists')
     ? readTasks()
     : createTasks()
 }
 
 async function createTasks() {
-  const aria2client = getGlobalState('aria2.instance')
-  const tasks = setGlobalState('tasks.data', Object.create(null))
-  const items = getGlobalState('galleryData.items')
+  const aria2client = GlobalState.get('aria2.instance')
+  const tasks = GlobalState.set('tasks.data', Object.create(null))
+  const items = GlobalState.get('galleryData.items')
 
   for (const [ i, item ] of items.entries()) {
     const filename = filenamify(item.name)
     const isProxyEnabled = readConfig('enableProxy')(item.url)
     const gid = await aria2client.call('addUri', [ item.url ], {
-      'dir': getGlobalState('outputDir'),
+      'dir': GlobalState.get('outputDir'),
       'out': filename,
-      'referer': getGlobalState('aria2.referer'),
+      'referer': GlobalState.get('aria2.referer'),
       'all-proxy': isProxyEnabled
         ? readConfig('proxy')
         : null,
@@ -107,17 +107,17 @@ async function createTasks() {
     }
   }
 
-  writeJson(getGlobalState('tasks.jsonFilePath'), tasks)
+  writeJson(GlobalState.get('tasks.jsonFilePath'), tasks)
 }
 
 function readTasks() {
-  const tasks = setGlobalState('tasks.data', Object.create(null))
+  const tasks = GlobalState.set('tasks.data', Object.create(null))
 
-  Object.assign(tasks, require(getGlobalState('tasks.jsonFilePath')))
+  Object.assign(tasks, require(GlobalState.get('tasks.jsonFilePath')))
 }
 
 function initSpeedAnalyzer() {
-  const tasks = getGlobalState('tasks.data')
+  const tasks = GlobalState.get('tasks.data')
 
   for (const task of Object.values(tasks)) {
     task.speedAnalyzer = new SpeedAnalyzer()
@@ -125,7 +125,7 @@ function initSpeedAnalyzer() {
 }
 
 function sortDownloads(activeDownloads) {
-  const tasks = getGlobalState('tasks.data')
+  const tasks = GlobalState.get('tasks.data')
 
   return activeDownloads.sort((a, b) => {
     const indexA = tasks[a.gid].index
@@ -136,7 +136,7 @@ function sortDownloads(activeDownloads) {
 }
 
 async function retryTask(task) {
-  const aria2client = getGlobalState('aria2.instance')
+  const aria2client = GlobalState.get('aria2.instance')
 
   task.speedAnalyzer.clear()
   await aria2client.call('pause', task.gid)
@@ -144,9 +144,9 @@ async function retryTask(task) {
 }
 
 async function checkProgress() {
-  const galleryData = getGlobalState('galleryData')
-  const aria2client = getGlobalState('aria2.instance')
-  const tasks = getGlobalState('tasks.data')
+  const galleryData = GlobalState.get('galleryData')
+  const aria2client = GlobalState.get('aria2.instance')
+  const tasks = GlobalState.get('tasks.data')
   const activeDownloads = await aria2client.call('tellActive')
   const globalStat = await aria2client.call('getGlobalStat')
   const numberTotal = galleryData.items.length
@@ -187,7 +187,7 @@ async function checkProgress() {
   })
 
   const waitingListStatusLines = WaitingList.get()
-    .filter(item => item !== getGlobalState('inputGalleryUrl'))
+    .filter(item => item !== GlobalState.get('inputGalleryUrl'))
     .map(item => `- ${item}`)
 
   if (waitingListStatusLines.length) {
@@ -208,8 +208,8 @@ async function checkProgress() {
 }
 
 async function trackDownloadSpeed() {
-  const aria2client = getGlobalState('aria2.instance')
-  const tasks = getGlobalState('tasks.data')
+  const aria2client = GlobalState.get('aria2.instance')
+  const tasks = GlobalState.get('tasks.data')
   const activeDownloads = await aria2client.call('tellActive')
 
   for (const download of activeDownloads) {
@@ -235,10 +235,10 @@ async function done() {
   clearInterval(speedIntervalId)
   await stopAria2()
 
-  fs.unlinkSync(getGlobalState('aria2.session.filePath'))
-  fs.unlinkSync(getGlobalState('tasks.jsonFilePath'))
+  fs.unlinkSync(GlobalState.get('aria2.session.filePath'))
+  fs.unlinkSync(GlobalState.get('tasks.jsonFilePath'))
 
-  const inputGalleryUrl = getGlobalState('inputGalleryUrl')
+  const inputGalleryUrl = GlobalState.get('inputGalleryUrl')
 
   WaitingList.remove(inputGalleryUrl)
 
@@ -255,8 +255,8 @@ async function done() {
 async function processGallery() {
   const inputGalleryUrl = WaitingList.get()[0]
 
-  resetGlobalState()
-  setGlobalState('inputGalleryUrl', inputGalleryUrl)
+  GlobalState.reset()
+  GlobalState.set('inputGalleryUrl', inputGalleryUrl)
 
   await getGalleryData()
   await prepare()

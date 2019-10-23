@@ -5,45 +5,43 @@ const dotProp = require('dot-prop')
 
 let globalState
 
-function resetGlobalState() {
-  globalState = deepSeal({
-    inputGalleryUrl: '',
-    galleryData: {
-      title: '',
-      items: [],
-    },
-    aria2: {
-      instance: null,
-      session: {
-        filePath: '',
-        isExists: false,
+const GlobalState = {
+  reset() {
+    globalState = deepSeal({
+      inputGalleryUrl: '',
+      galleryData: {
+        title: '',
+        items: [],
       },
-      referer: '',
-    },
-    tasks: {
-      data: null,
-      jsonFilePath: '',
-    },
-    outputDir: '',
-  })
-}
-resetGlobalState()
+      aria2: {
+        instance: null,
+        session: {
+          filePath: '',
+          isExists: false,
+        },
+        referer: '',
+      },
+      tasks: {
+        data: null,
+        jsonFilePath: '',
+      },
+      outputDir: '',
+    })
+  },
 
-function getGlobalState(key) {
-  return dotProp.get(globalState, key)
-}
+  get(key) {
+    return dotProp.get(globalState, key)
+  },
 
-function setGlobalState(key, value) {
-  if (arguments.length < 2) {
-    throw new Error('value is required.')
-  }
+  set(key, value) {
+    if (arguments.length < 2) {
+      throw new Error('value is required.')
+    }
 
-  dotProp.set(globalState, key, value)
-  return value
+    dotProp.set(globalState, key, value)
+    return value
+  },
 }
+GlobalState.reset()
 
-module.exports = {
-  getGlobalState,
-  setGlobalState,
-  resetGlobalState,
-}
+module.exports = GlobalState

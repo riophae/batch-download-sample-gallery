@@ -6,7 +6,7 @@ const getPort = require('just-once')(require('get-port'))
 const portUsed = require('port-used')
 const compact = require('@extra-array/compact')
 const { readConfig } = require('./config')
-const { getGlobalState, setGlobalState } = require('./global-state')
+const GlobalState = require('./global-state')
 const untilProcessExits = require('./until-process-exits')
 
 const CHECK_PORT_RETRY_INTERVAL = 50
@@ -32,10 +32,10 @@ async function startAria2() {
       : null,
     '--conditional-get',
     '--remote-time',
-    getGlobalState('aria2.session.isExists')
-      ? `--input-file=${getGlobalState('aria2.session.filePath')}`
+    GlobalState.get('aria2.session.isExists')
+      ? `--input-file=${GlobalState.get('aria2.session.filePath')}`
       : null,
-    `--save-session=${getGlobalState('aria2.session.filePath')}`,
+    `--save-session=${GlobalState.get('aria2.session.filePath')}`,
   ]))
   aria2server.catch(error => {
     console.error(error)
@@ -53,13 +53,13 @@ async function startAria2() {
   })
   await aria2client.open()
 
-  setGlobalState('aria2.instance', aria2client)
+  GlobalState.set('aria2.instance', aria2client)
 }
 
 async function stopAria2() {
   await aria2client.close()
   aria2client = null
-  setGlobalState('aria2.instance', null)
+  GlobalState.set('aria2.instance', null)
 
   aria2server.cancel()
   await untilProcessExits(aria2server.pid)

@@ -3,12 +3,12 @@
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
 const request = require('../utils/request')
+const GlobalState = require('../utils/global-state')
 const getFilenameFromUrl = require('../utils/get-filename-from-url')
 const { readConfig } = require('../utils/config')
-const { getGlobalState, setGlobalState } = require('../utils/global-state')
 
 module.exports = async () => {
-  const inputGalleryUrl = getGlobalState('inputGalleryUrl')
+  const inputGalleryUrl = GlobalState.get('inputGalleryUrl')
   const html = await request({ url: inputGalleryUrl })
   const $ = cheerio.load(html)
 
@@ -20,8 +20,8 @@ module.exports = async () => {
     : []
   const mediaUrls = [ ...images, ...videos ].map(el => $(el).prop('href'))
 
-  setGlobalState('galleryData.title', title + ' (photography-blog)')
-  setGlobalState('galleryData.items', dedupe(mediaUrls).map(url => ({
+  GlobalState.set('galleryData.title', title + ' (photography-blog)')
+  GlobalState.set('galleryData.items', dedupe(mediaUrls).map(url => ({
     name: getFilenameFromUrl(url),
     url,
   })))

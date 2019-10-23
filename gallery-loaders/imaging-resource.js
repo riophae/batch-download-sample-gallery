@@ -2,8 +2,8 @@
 
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
+const GlobalState = require('../utils/global-state')
 const request = require('../utils/request')
-const { getGlobalState, setGlobalState } = require('../utils/global-state')
 
 const fileNameRE = /[a-z0-9-_]+\.[a-z0-9]{3}/ig
 const testFileNameRE = /^[a-z0-9-_]+\.[a-z0-9]{3}$/i
@@ -31,15 +31,15 @@ async function getGallery(url) {
 }
 
 module.exports = async () => {
-  const inputGalleryUrl = getGlobalState('inputGalleryUrl')
+  const inputGalleryUrl = GlobalState.get('inputGalleryUrl')
   const productId = inputGalleryUrl.match(/imaging-resource\.com\/PRODS\/([^\\]+)\//)[1]
   const galleryUrl = `https://www.imaging-resource.com/PRODS/${productId}/${productId}GALLERY.HTM`
   const { title, fileNames } = await getGallery(galleryUrl)
 
-  setGlobalState('galleryData.title', title + ' (imaging-resource)')
-  setGlobalState('galleryData.items', dedupe(fileNames).map(fileName => ({
+  GlobalState.set('galleryData.title', title + ' (imaging-resource)')
+  GlobalState.set('galleryData.items', dedupe(fileNames).map(fileName => ({
     name: fileName,
     url: `https://www.imaging-resource.com/PRODS/${productId}/FULLRES/${fileName}`,
   })))
-  setGlobalState('aria2.referer', galleryUrl)
+  GlobalState.set('aria2.referer', galleryUrl)
 }

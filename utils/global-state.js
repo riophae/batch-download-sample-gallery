@@ -34,6 +34,10 @@ function getGlobalState(key) {
 }
 
 function setGlobalState(key, value) {
+  if (arguments.length < 2) {
+    throw new Error('value is required.')
+  }
+
   dotProp.set(globalState, key, value)
   return value
 }

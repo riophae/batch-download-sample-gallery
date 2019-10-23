@@ -67,7 +67,7 @@ async function prepare() {
   setGlobalState('aria2.session.isExists', fs.existsSync(getGlobalState('aria2.session.filePath')))
   setGlobalState('tasks.jsonFilePath', path.join(getGlobalState('outputDir'), 'tasks.json'))
 
-  if (!setGlobalState('aria2.referer')) {
+  if (!getGlobalState('aria2.referer')) {
     setGlobalState('aria2.referer', getGlobalState('inputGalleryUrl'))
   }
 

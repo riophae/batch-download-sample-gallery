@@ -7,20 +7,20 @@ const dotProp = require('dot-prop')
 
 let config
 
-function initConfig() {
-  const userConfigPath = path.join(__dirname, '../config.js')
-  const defaultConfigPath = path.join(__dirname, '../config.default.js')
-  const userConfig = fs.existsSync(userConfigPath) ? require(userConfigPath) : {}
-  const defaultConfig = require(defaultConfigPath)
+const Config = {
+  _init() {
+    const userConfigPath = path.join(__dirname, '../config.js')
+    const defaultConfigPath = path.join(__dirname, '../config.default.js')
+    const userConfig = fs.existsSync(userConfigPath) ? require(userConfigPath) : {}
+    const defaultConfig = require(defaultConfigPath)
 
-  config = deepmerge(defaultConfig, userConfig)
-}
-initConfig()
+    config = deepmerge(defaultConfig, userConfig)
+  },
 
-function readConfig(key) {
-  return dotProp.get(config, key)
+  read(key) {
+    return dotProp.get(config, key)
+  },
 }
+Config._init()
 
-module.exports = {
-  readConfig,
-}
+module.exports = Config

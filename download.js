@@ -10,11 +10,13 @@ const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
-const { readConfig } = require('./utils/config')
+
 const Mutex = require('./utils/mutex')
 const WaitingList = require('./utils/waiting-list')
+const Config = require('./utils/config')
 const GlobalState = require('./utils/global-state')
 const { startAria2, stopAria2 } = require('./utils/aria2')
+
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
 const SpeedAnalyzer = require('./utils/speed-analyzer')
@@ -62,7 +64,7 @@ async function getGalleryData() {
 async function prepare() {
   const galleryData = GlobalState.get('galleryData')
 
-  GlobalState.set('outputDir', path.join(readConfig('outputDir'), filenamify(galleryData.title)))
+  GlobalState.set('outputDir', path.join(Config.read('outputDir'), filenamify(galleryData.title)))
   GlobalState.set('aria2.session.filePath', path.join(GlobalState.get('outputDir'), 'aria2.session'))
   GlobalState.set('aria2.session.isExists', fs.existsSync(GlobalState.get('aria2.session.filePath')))
   GlobalState.set('tasks.jsonFilePath', path.join(GlobalState.get('outputDir'), 'tasks.json'))
@@ -88,13 +90,13 @@ async function createTasks() {
 
   for (const [ i, item ] of items.entries()) {
     const filename = filenamify(item.name)
-    const isProxyEnabled = readConfig('enableProxy')(item.url)
+    const isProxyEnabled = Config.read('enableProxy')(item.url)
     const gid = await aria2client.call('addUri', [ item.url ], {
       'dir': GlobalState.get('outputDir'),
       'out': filename,
       'referer': GlobalState.get('aria2.referer'),
       'all-proxy': isProxyEnabled
-        ? readConfig('proxy')
+        ? Config.read('proxy')
         : null,
     })
 

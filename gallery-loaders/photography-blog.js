@@ -2,10 +2,10 @@
 
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
-const request = require('../utils/request')
+const Config = require('../utils/config')
 const GlobalState = require('../utils/global-state')
+const request = require('../utils/request')
 const getFilenameFromUrl = require('../utils/get-filename-from-url')
-const { readConfig } = require('../utils/config')
 
 module.exports = async () => {
   const inputGalleryUrl = GlobalState.get('inputGalleryUrl')
@@ -15,7 +15,7 @@ module.exports = async () => {
   const title = $('.entry-title-wide h1.item').text().replace(/\bReview\b/, '').trim()
   const images = $('table .exif a').toArray()
     .filter(el => $(el).text().trim() === 'Download Original')
-  const videos = readConfig('downloadSampleMovies')
+  const videos = Config.read('downloadSampleMovies')
     ? $('p.movie-link a').toArray()
     : []
   const mediaUrls = [ ...images, ...videos ].map(el => $(el).prop('href'))

@@ -5,7 +5,7 @@ const Aria2 = require('aria2')
 const getPort = require('just-once')(require('get-port'))
 const portUsed = require('port-used')
 const compact = require('@extra-array/compact')
-const { readConfig } = require('./config')
+const Config = require('./config')
 const GlobalState = require('./global-state')
 const untilProcessExits = require('./until-process-exits')
 
@@ -16,17 +16,17 @@ let aria2server
 let aria2client
 
 async function startAria2() {
-  const port = readConfig('aria2.port') || await getPort()
-  const diskCache = readConfig('aria2.diskCache')
+  const port = Config.read('aria2.port') || await getPort()
+  const diskCache = Config.read('aria2.diskCache')
 
   aria2server = execa('aria2c', compact([
     '--enable-rpc',
     '--rpc-allow-origin-all',
     `--rpc-listen-port=${port}`,
-    `--max-concurrent-downloads=${readConfig('aria2.concurrent')}`,
-    `--split=${readConfig('aria2.split')}`,
-    `--max-download-limit=${readConfig('aria2.speedLimit')}`,
-    `--max-overall-download-limit=${readConfig('aria2.overallSpeedLimit')}`,
+    `--max-concurrent-downloads=${Config.read('aria2.concurrent')}`,
+    `--split=${Config.read('aria2.split')}`,
+    `--max-download-limit=${Config.read('aria2.speedLimit')}`,
+    `--max-overall-download-limit=${Config.read('aria2.overallSpeedLimit')}`,
     diskCache
       ? `--disk-cache=${diskCache}`
       : null,

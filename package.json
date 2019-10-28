@@ -25,7 +25,7 @@
     "deep-seal": "^2.2.1",
     "deepmerge": "^4.0.0",
     "dot-prop": "^5.1.0",
-    "execa": "^2.0.4",
+    "execa": "^3.2.0",
     "exit-hook": "^2.2.0",
     "filenamify": "^4.1.0",
     "get-port": "^5.0.0",
@@ -44,6 +44,6 @@
     "request": "^2.85.0",
     "request-promise-native": "^1.0.5",
     "urlish": "^1.0.1",
-    "yallist": "^3.1.0"
+    "yallist": "^4.0.0"
   }
 }

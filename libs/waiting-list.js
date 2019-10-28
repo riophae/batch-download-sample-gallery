@@ -6,7 +6,7 @@ const chokidar = require('chokidar')
 const arrayRemove = require('just-remove')
 const arrayMove = require('array-move')
 const { loadGallery, createHashForUrl } = require('../adapters')
-const writeJson = require('../utils/write-json')
+const writeJsonFile = require('../utils/write-json-file')
 
 const WAITING_LIST_FILE_PATH = path.join(__dirname, '../waiting-list.json')
 
@@ -52,7 +52,7 @@ const WaitingList = {
   },
 
   _write(newWaitingList) {
-    writeJson(WAITING_LIST_FILE_PATH, newWaitingList)
+    writeJsonFile(WAITING_LIST_FILE_PATH, newWaitingList)
   },
 
   _findEntry(galleryUrl) {

@@ -21,7 +21,7 @@ const isValidUrl = require('./utils/is-valid-url')
 const updateStdout = require('./utils/update-stdout')
 const filenamify = require('./utils/filenamify')
 const xbytes = require('./utils/xbytes')
-const writeJson = require('./utils/write-json')
+const writeJsonFile = require('./utils/write-json-file')
 const progressBar = require('./utils/progress-bar')
 
 let progressIntervalId
@@ -76,18 +76,37 @@ async function createTasks() {
       index: i + 1,
       gid,
       filename,
+      url: item.url,
       isProxyEnabled,
       speedAnalyzer: null,
     }
   }
 
-  writeJson(GlobalState.get('tasks.jsonFilePath'), tasks)
+  writeJsonFile(GlobalState.get('tasks.jsonFilePath'), tasks)
 }
 
-function readTasks() {
+async function readTasks() {
+  const aria2client = Aria2.getClient()
   const tasks = GlobalState.get('tasks.data')
 
   Object.assign(tasks, require(GlobalState.get('tasks.jsonFilePath')))
+
+  for (const [ gid, task ] of Object.entries(tasks)) {
+    const oldProxySetting = task.isProxyEnabled
+    const newProxySetting = Config.read('enableProxy')(task.url)
+
+    if (oldProxySetting !== newProxySetting) {
+      task.isProxyEnabled = newProxySetting
+
+      await aria2client.call('changeOption', gid, {
+        'all-proxy': newProxySetting
+          ? Config.read('proxy')
+          : null,
+      })
+    }
+  }
+
+  writeJsonFile(GlobalState.get('tasks.jsonFilePath'), tasks)
 }
 
 function initSpeedAnalyzer() {

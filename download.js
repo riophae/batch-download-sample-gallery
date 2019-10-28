@@ -4,7 +4,6 @@ const fs = require('fs')
 const path = require('path')
 const chalk = require('chalk')
 const makeDir = require('make-dir')
-const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
 
@@ -17,10 +16,11 @@ const GlobalState = require('./libs/global-state')
 const Aria2 = require('./libs/aria2')
 const SpeedAnalyzer = require('./libs/speed-analyzer')
 
-const updateStdout = require('./utils/update-stdout')
 const GlobalStopwatch = require('./utils/global-stopwatch')
-const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
+const updateStdout = require('./utils/update-stdout')
+const filenamify = require('./utils/filenamify')
+const xbytes = require('./utils/xbytes')
 const writeJson = require('./utils/write-json')
 const progressBar = require('./utils/progress-bar')
 
@@ -146,8 +146,8 @@ async function checkProgress() {
       chalk.gray('Downloading:'),
       chalk.green(`[${leftPad(task.index, numberTotal.toString().length)}/${numberTotal}]`),
       '[' + chalk.gray(progressBar.format(percent)) + ']',
-      leftPad(totalLength ? prettyBytes(totalLength) : '', 12),
-      leftPad(downloadSpeed ? `${prettyBytes(downloadSpeed)}/s` : '', 12),
+      leftPad(totalLength ? xbytes(totalLength) : '', 12),
+      leftPad(downloadSpeed ? `${xbytes(downloadSpeed)}/s` : '', 12),
       leftPad(remaining ? prettyMs(remaining) : '', 12),
       chalk.cyan(task.filename) + proxyIndicator,
     ].join(' ')
@@ -164,7 +164,7 @@ async function checkProgress() {
     '',
     ...taskStatusLines,
     '',
-    `Overall speed: ${chalk.bold(prettyBytes(Number(globalStat.downloadSpeed)) + '/s')}`,
+    `Overall speed: ${chalk.bold(xbytes(Number(globalStat.downloadSpeed)) + '/s')}`,
     `Overall progress: [${chalk.bold(progressBar.format(numberCompleted / numberTotal))}] ${numberCompleted} completed, ${numberTotal - numberCompleted} remaining`,
     `aria2 RPC interface is listening at ${chalk.bold(aria2client.url('http'))} (no secret token)`,
     '',

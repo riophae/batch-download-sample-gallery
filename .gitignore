@@ -1,6 +1,7 @@
 /config.js
 /lock
 /waiting-list.json
+/log
 
 node_modules
 output

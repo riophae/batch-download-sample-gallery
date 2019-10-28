@@ -38,6 +38,15 @@ async function prepare() {
 
   await Aria2.start()
   await makeDir(GlobalState.get('outputDir'))
+
+  const aria2client = Aria2.getClient()
+
+  aria2client.on('onDownloadPause', downloads => {
+    clearSpeedAnalyzerForDownloads(downloads)
+  })
+  aria2client.on('onDownloadComplete', downloads => {
+    clearSpeedAnalyzerForDownloads(downloads)
+  })
 }
 
 function initTasks() {
@@ -100,10 +109,19 @@ function sortDownloads(activeDownloads) {
   })
 }
 
+function clearSpeedAnalyzerForDownloads(downloads) {
+  const tasks = GlobalState.get('tasks.data')
+
+  for (const download of downloads) {
+    const { gid } = download
+    const task = tasks[gid]
+
+    if (task) task.speedAnalyzer.clear()
+  }
+}
+
 async function retryTask(task) {
   const aria2client = Aria2.getClient()
-
-  task.speedAnalyzer.clear()
 
   await aria2client.call('pause', task.gid)
   await aria2client.call('unpause', task.gid)

@@ -15,7 +15,6 @@ const GlobalState = {
         actualGalleryUrl: '',
       },
       aria2: {
-        instance: null,
         sessionFile: {
           path: '',
           isExisting: false,

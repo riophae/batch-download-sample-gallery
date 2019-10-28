@@ -1,7 +1,7 @@
 'use strict'
 
 const execa = require('execa')
-const Aria2 = require('aria2')
+const Aria2Client = require('aria2')
 const getPort = require('just-once')(require('get-port'))
 const portUsed = require('port-used')
 const compact = require('@extra-array/compact')
@@ -15,58 +15,58 @@ const CHECK_PORT_TIMEOUT = 5000
 let aria2server
 let aria2client
 
-async function startAria2() {
-  const port = Config.read('aria2.port') || await getPort()
-  const diskCache = Config.read('aria2.diskCache')
+const Aria2 = {
+  async start() {
+    const port = Config.read('aria2.port') || await getPort()
+    const diskCache = Config.read('aria2.diskCache')
 
-  aria2server = execa('aria2c', compact([
-    '--enable-rpc',
-    '--rpc-allow-origin-all',
-    `--rpc-listen-port=${port}`,
-    `--max-concurrent-downloads=${Config.read('aria2.concurrent')}`,
-    `--split=${Config.read('aria2.split')}`,
-    `--max-download-limit=${Config.read('aria2.speedLimit')}`,
-    `--max-overall-download-limit=${Config.read('aria2.overallSpeedLimit')}`,
-    diskCache
-      ? `--disk-cache=${diskCache}`
-      : null,
-    '--conditional-get',
-    '--remote-time',
-    GlobalState.get('aria2.sessionFile.isExisting')
-      ? `--input-file=${GlobalState.get('aria2.sessionFile.path')}`
-      : null,
-    `--save-session=${GlobalState.get('aria2.sessionFile.path')}`,
-  ]))
-  aria2server.catch(error => {
-    console.error(error)
-    process.exit(1)
-  })
-  await portUsed.waitUntilUsed(
-    port,
-    CHECK_PORT_RETRY_INTERVAL,
-    CHECK_PORT_TIMEOUT,
-  )
+    aria2server = execa('aria2c', compact([
+      '--enable-rpc',
+      '--rpc-allow-origin-all',
+      `--rpc-listen-port=${port}`,
+      `--max-concurrent-downloads=${Config.read('aria2.concurrent')}`,
+      `--split=${Config.read('aria2.split')}`,
+      `--max-download-limit=${Config.read('aria2.speedLimit')}`,
+      `--max-overall-download-limit=${Config.read('aria2.overallSpeedLimit')}`,
+      diskCache
+        ? `--disk-cache=${diskCache}`
+        : null,
+      '--conditional-get',
+      '--remote-time',
+      GlobalState.get('aria2.sessionFile.isExisting')
+        ? `--input-file=${GlobalState.get('aria2.sessionFile.path')}`
+        : null,
+      `--save-session=${GlobalState.get('aria2.sessionFile.path')}`,
+    ]))
+    aria2server.catch(error => {
+      console.error(error)
+      process.exit(1)
+    })
+    await portUsed.waitUntilUsed(
+      port,
+      CHECK_PORT_RETRY_INTERVAL,
+      CHECK_PORT_TIMEOUT,
+    )
 
-  aria2client = new Aria2({
-    host: 'localhost',
-    port,
-  })
-  await aria2client.open()
+    aria2client = new Aria2Client({
+      host: 'localhost',
+      port,
+    })
+    await aria2client.open()
+  },
 
-  GlobalState.set('aria2.instance', aria2client)
+  async stop() {
+    await aria2client.close()
+    aria2client = null
+
+    aria2server.cancel()
+    await untilProcessExits(aria2server.pid)
+    aria2server = null
+  },
+
+  getClient() {
+    return aria2client
+  },
 }
 
-async function stopAria2() {
-  await aria2client.close()
-  aria2client = null
-  GlobalState.set('aria2.instance', null)
-
-  aria2server.cancel()
-  await untilProcessExits(aria2server.pid)
-  aria2server = null
-}
-
-module.exports = {
-  startAria2,
-  stopAria2,
-}
+module.exports = Aria2

@@ -14,7 +14,7 @@ const Mutex = require('./libs/mutex')
 const WaitingList = require('./libs/waiting-list')
 const Config = require('./libs/config')
 const GlobalState = require('./libs/global-state')
-const { startAria2, stopAria2 } = require('./libs/aria2')
+const Aria2 = require('./libs/aria2')
 const SpeedAnalyzer = require('./libs/speed-analyzer')
 
 const updateStdout = require('./utils/update-stdout')
@@ -36,7 +36,7 @@ async function prepare() {
   GlobalState.set('tasks.jsonFilePath', path.join(GlobalState.get('outputDir'), 'tasks.json'))
   GlobalState.set('tasks.data', Object.create(null))
 
-  await startAria2()
+  await Aria2.start()
   await makeDir(GlobalState.get('outputDir'))
 }
 
@@ -47,7 +47,7 @@ function initTasks() {
 }
 
 async function createTasks() {
-  const aria2client = GlobalState.get('aria2.instance')
+  const aria2client = Aria2.getClient()
   const tasks = GlobalState.get('tasks.data')
   const items = GlobalState.get('galleryData.items')
 
@@ -101,17 +101,19 @@ function sortDownloads(activeDownloads) {
 }
 
 async function retryTask(task) {
-  const aria2client = GlobalState.get('aria2.instance')
+  const aria2client = Aria2.getClient()
 
   task.speedAnalyzer.clear()
+
   await aria2client.call('pause', task.gid)
   await aria2client.call('unpause', task.gid)
 }
 
 async function checkProgress() {
   const galleryData = GlobalState.get('galleryData')
-  const aria2client = GlobalState.get('aria2.instance')
+  const aria2client = Aria2.getClient()
   const tasks = GlobalState.get('tasks.data')
+
   const activeDownloads = await aria2client.call('tellActive')
   const globalStat = await aria2client.call('getGlobalStat')
   const numberTotal = galleryData.items.length
@@ -171,7 +173,7 @@ async function checkProgress() {
 }
 
 async function trackDownloadSpeed() {
-  const aria2client = GlobalState.get('aria2.instance')
+  const aria2client = Aria2.getClient()
   const tasks = GlobalState.get('tasks.data')
   const activeDownloads = await aria2client.call('tellActive')
 
@@ -196,7 +198,8 @@ function setupRunner() {
 async function done() {
   clearInterval(progressIntervalId)
   clearInterval(speedIntervalId)
-  await stopAria2()
+
+  await Aria2.stop()
 
   fs.unlinkSync(GlobalState.get('aria2.sessionFile.path'))
   fs.unlinkSync(GlobalState.get('tasks.jsonFilePath'))

@@ -2,90 +2,53 @@
 
 const fs = require('fs')
 const path = require('path')
-const assert = require('assert')
 const chalk = require('chalk')
-const ProgressBarFormatter = require('progress-bar-formatter')
-const logUpdate = require('log-update')
 const makeDir = require('make-dir')
 const prettyBytes = require('pretty-bytes')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
 
-const Mutex = require('./utils/mutex')
-const WaitingList = require('./utils/waiting-list')
-const Config = require('./utils/config')
-const GlobalState = require('./utils/global-state')
-const { startAria2, stopAria2 } = require('./utils/aria2')
+const { isWebsiteSupported } = require('./adapters')
 
+const Mutex = require('./libs/mutex')
+const WaitingList = require('./libs/waiting-list')
+const Config = require('./libs/config')
+const GlobalState = require('./libs/global-state')
+const { startAria2, stopAria2 } = require('./libs/aria2')
+const SpeedAnalyzer = require('./libs/speed-analyzer')
+
+const updateStdout = require('./utils/update-stdout')
+const GlobalStopwatch = require('./utils/global-stopwatch')
 const filenamify = require('./utils/filenamify')
 const isValidUrl = require('./utils/is-valid-url')
-const SpeedAnalyzer = require('./utils/speed-analyzer')
 const writeJson = require('./utils/write-json')
+const progressBar = require('./utils/progress-bar')
 
-const startTime = Date.now()
 let progressIntervalId
 let speedIntervalId
-const bar = new ProgressBarFormatter({
-  complete: '=',
-  incomplete: ' ',
-  length: 18,
-})
-
-function update(lines) {
-  const message = Array.isArray(lines) ? lines.join('\n') : lines
-
-  logUpdate(message.trim())
-}
-
-function getGalleryLoader() {
-  const inputGalleryUrl = GlobalState.get('inputGalleryUrl')
-
-  if (inputGalleryUrl.includes('dpreview.com')) return require('./gallery-loaders/dpreview')
-  if (inputGalleryUrl.includes('imaging-resource.com')) return require('./gallery-loaders/imaging-resource')
-  if (inputGalleryUrl.includes('photographyblog.com')) return require('./gallery-loaders/photography-blog')
-  if (inputGalleryUrl.includes('dcfever.com')) return require('./gallery-loaders/dcfever')
-
-  throw new Error('Unknown website')
-}
-
-async function getGalleryData() {
-  update('Fetching gallery data...')
-
-  const galleryLoader = getGalleryLoader()
-
-  await galleryLoader()
-
-  const { title, items } = GlobalState.get('galleryData')
-
-  assert(typeof title === 'string' && title.length)
-  assert(Array.isArray(items) && items.length)
-}
 
 async function prepare() {
   const galleryData = GlobalState.get('galleryData')
 
   GlobalState.set('outputDir', path.join(Config.read('outputDir'), filenamify(galleryData.title)))
-  GlobalState.set('aria2.session.filePath', path.join(GlobalState.get('outputDir'), 'aria2.session'))
-  GlobalState.set('aria2.session.isExists', fs.existsSync(GlobalState.get('aria2.session.filePath')))
+  GlobalState.set('aria2.sessionFile.path', path.join(GlobalState.get('outputDir'), 'aria2.session'))
+  GlobalState.set('aria2.sessionFile.isExisting', fs.existsSync(GlobalState.get('aria2.sessionFile.path')))
   GlobalState.set('tasks.jsonFilePath', path.join(GlobalState.get('outputDir'), 'tasks.json'))
-
-  if (!GlobalState.get('aria2.referer')) {
-    GlobalState.set('aria2.referer', GlobalState.get('inputGalleryUrl'))
-  }
+  GlobalState.set('tasks.data', Object.create(null))
 
   await startAria2()
   await makeDir(GlobalState.get('outputDir'))
 }
 
 function initTasks() {
-  return GlobalState.get('aria2.session.isExists')
+  return GlobalState.get('aria2.sessionFile.isExisting')
     ? readTasks()
     : createTasks()
 }
 
 async function createTasks() {
   const aria2client = GlobalState.get('aria2.instance')
-  const tasks = GlobalState.set('tasks.data', Object.create(null))
+  const tasks = GlobalState.get('tasks.data')
   const items = GlobalState.get('galleryData.items')
 
   for (const [ i, item ] of items.entries()) {
@@ -94,7 +57,7 @@ async function createTasks() {
     const gid = await aria2client.call('addUri', [ item.url ], {
       'dir': GlobalState.get('outputDir'),
       'out': filename,
-      'referer': GlobalState.get('aria2.referer'),
+      'referer': GlobalState.get('galleryData.actualGalleryUrl'),
       'all-proxy': isProxyEnabled
         ? Config.read('proxy')
         : null,
@@ -113,7 +76,7 @@ async function createTasks() {
 }
 
 function readTasks() {
-  const tasks = GlobalState.set('tasks.data', Object.create(null))
+  const tasks = GlobalState.get('tasks.data')
 
   Object.assign(tasks, require(GlobalState.get('tasks.jsonFilePath')))
 }
@@ -180,7 +143,7 @@ async function checkProgress() {
     return [
       chalk.gray('Downloading:'),
       chalk.green(`[${leftPad(task.index, numberTotal.toString().length)}/${numberTotal}]`),
-      '[' + chalk.gray(bar.format(percent)) + ']',
+      '[' + chalk.gray(progressBar.format(percent)) + ']',
       leftPad(totalLength ? prettyBytes(totalLength) : '', 12),
       leftPad(downloadSpeed ? `${prettyBytes(downloadSpeed)}/s` : '', 12),
       leftPad(remaining ? prettyMs(remaining) : '', 12),
@@ -188,21 +151,19 @@ async function checkProgress() {
     ].join(' ')
   })
 
-  const waitingListStatusLines = WaitingList.get()
-    .filter(item => item !== GlobalState.get('inputGalleryUrl'))
-    .map(item => `- ${item}`)
-
+  const waitingListStatusLines = WaitingList.getRest()
+    .map(entry => `  - ${entry.galleryData.title}`)
   if (waitingListStatusLines.length) {
     waitingListStatusLines.unshift('Waiting:')
   }
 
-  update([
+  updateStdout([
     `Gallery: ${chalk.bold(galleryData.title)}`,
     '',
     ...taskStatusLines,
     '',
     `Overall speed: ${chalk.bold(prettyBytes(Number(globalStat.downloadSpeed)) + '/s')}`,
-    `Overall progress: [${chalk.bold(bar.format(numberCompleted / numberTotal))}] ${numberCompleted} completed, ${numberTotal - numberCompleted} remaining`,
+    `Overall progress: [${chalk.bold(progressBar.format(numberCompleted / numberTotal))}] ${numberCompleted} completed, ${numberTotal - numberCompleted} remaining`,
     `aria2 RPC interface is listening at ${chalk.bold(aria2client.url('http'))} (no secret token)`,
     '',
     ...waitingListStatusLines,
@@ -237,30 +198,30 @@ async function done() {
   clearInterval(speedIntervalId)
   await stopAria2()
 
-  fs.unlinkSync(GlobalState.get('aria2.session.filePath'))
+  fs.unlinkSync(GlobalState.get('aria2.sessionFile.path'))
   fs.unlinkSync(GlobalState.get('tasks.jsonFilePath'))
 
-  const inputGalleryUrl = GlobalState.get('inputGalleryUrl')
+  const galleryUrl = GlobalState.get('galleryUrl')
 
-  WaitingList.remove(inputGalleryUrl)
+  WaitingList.remove(galleryUrl)
 
   if (!WaitingList.isEmpty()) {
-    processGallery()
+    processWaitingList()
   } else {
-    const diff = prettyMs(Date.now() - startTime)
+    const timeLapsed = prettyMs(GlobalStopwatch.tell())
 
-    update(`All tasks done in ${diff}.`)
+    updateStdout(`All tasks done in ${timeLapsed}.`)
     process.exit(0)
   }
 }
 
-async function processGallery() {
-  const inputGalleryUrl = WaitingList.get()[0]
+async function processWaitingList() {
+  const entry = WaitingList.getCurrent()
 
   GlobalState.reset()
-  GlobalState.set('inputGalleryUrl', inputGalleryUrl)
+  GlobalState.set('galleryUrl', entry.galleryUrl)
+  GlobalState.set('galleryData', entry.galleryData)
 
-  await getGalleryData()
   await prepare()
   await initTasks()
   initSpeedAnalyzer()
@@ -271,32 +232,37 @@ async function main() {
   await WaitingList.init()
 
   const hasInput = process.argv.length >= 3
-  const inputGalleryUrl = process.argv[2]
-  const isAlreadyInWaitingList = hasInput && WaitingList.isInList(inputGalleryUrl)
-  const isLocked = Mutex.isLocked()
+  const galleryUrl = process.argv[2]
 
-  if (hasInput && !isValidUrl(inputGalleryUrl)) {
-    throw new Error(`Unrecognizable input: ${inputGalleryUrl}`)
+  if (hasInput && !isValidUrl(galleryUrl)) {
+    throw new Error(`Unrecognizable input: ${galleryUrl}`)
   }
 
+  if (hasInput && !isWebsiteSupported(galleryUrl)) {
+    throw new Error(`Website not supported: ${galleryUrl}`)
+  }
+
+  const isAlreadyInWaitingList = hasInput && WaitingList.isInList(galleryUrl)
+  const isLocked = Mutex.isLocked()
+
   if (hasInput && !isAlreadyInWaitingList) {
-    WaitingList.add(inputGalleryUrl)
+    await WaitingList.add(galleryUrl)
   }
 
   if (hasInput && !isLocked) {
-    WaitingList.moveToTop(inputGalleryUrl)
+    WaitingList.moveToTop(galleryUrl)
   }
 
   if (hasInput && isLocked) {
     if (isAlreadyInWaitingList) {
-      logUpdate('The gallery is already in the waiting list.')
+      updateStdout('The gallery is already in the waiting list.')
     } else {
-      logUpdate('Another instance is running. Added the gallery to the waiting list.')
+      updateStdout('Another instance is running. Added the gallery to the waiting list.')
     }
   }
 
   if (!hasInput && isLocked) {
-    logUpdate('Another instance is running.')
+    updateStdout('Another instance is running.')
   }
 
   if (!hasInput && !isLocked && WaitingList.isEmpty()) {
@@ -305,7 +271,7 @@ async function main() {
 
   if (!isLocked && !WaitingList.isEmpty()) {
     Mutex.lock()
-    processGallery()
+    processWaitingList()
   } else {
     process.exit(0)
   }

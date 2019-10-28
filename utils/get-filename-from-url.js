@@ -1,9 +1,9 @@
 'use strict'
 
-const u = require('url')
+const Url = require('url')
 
 module.exports = url => {
-  const { pathname } = u.parse(url)
+  const { pathname } = Url.parse(url)
   const filename = pathname.split('/').pop()
 
   return filename

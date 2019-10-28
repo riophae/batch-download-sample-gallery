@@ -5,7 +5,8 @@ const path = require('path')
 const chokidar = require('chokidar')
 const arrayRemove = require('just-remove')
 const arrayMove = require('array-move')
-const writeJson = require('./write-json')
+const { loadGallery, createHashForUrl } = require('../adapters')
+const writeJson = require('../utils/write-json')
 
 const WAITING_LIST_FILE_PATH = path.join(__dirname, '../waiting-list.json')
 
@@ -54,8 +55,24 @@ const WaitingList = {
     writeJson(WAITING_LIST_FILE_PATH, newWaitingList)
   },
 
-  get() {
-    return waitingList
+  _findEntry(galleryUrl) {
+    const hash = createHashForUrl(galleryUrl)
+
+    return waitingList.find(entry => entry.hash === hash)
+  },
+
+  _findIndex(galleryUrl) {
+    const hash = createHashForUrl(galleryUrl)
+
+    return waitingList.findIndex(entry => entry.hash === hash)
+  },
+
+  getCurrent() {
+    return waitingList[0]
+  },
+
+  getRest() {
+    return waitingList.slice(1)
   },
 
   set(newWaitingList) {
@@ -68,15 +85,22 @@ const WaitingList = {
   },
 
   isInList(galleryUrl) {
-    return waitingList.includes(galleryUrl)
+    return WaitingList._findIndex(galleryUrl) !== -1
   },
 
-  add(galleryUrl) {
+  async add(galleryUrl) {
     if (WaitingList.isInList(galleryUrl)) {
       throw new Error(`Attept to add a gallery that is already in the waiting list: ${galleryUrl}`)
     }
 
-    const newWaitingList = [ ...waitingList, galleryUrl ]
+    const galleryData = await loadGallery(galleryUrl)
+    const hash = createHashForUrl(galleryUrl)
+    const entry = {
+      hash,
+      galleryUrl,
+      galleryData,
+    }
+    const newWaitingList = [ ...waitingList, entry ]
 
     WaitingList.set(newWaitingList)
   },
@@ -86,7 +110,8 @@ const WaitingList = {
       throw new Error(`Attept to remove a gallery that is not in the waiting list: ${galleryUrl}`)
     }
 
-    const newWaitingList = arrayRemove(waitingList, [ galleryUrl ])
+    const entry = WaitingList._findEntry(galleryUrl)
+    const newWaitingList = arrayRemove(waitingList, [ entry ])
 
     WaitingList.set(newWaitingList)
   },
@@ -96,9 +121,10 @@ const WaitingList = {
       throw new Error(`Attept to move a gallery to the top that is not in the waiting list: ${galleryUrl}`)
     }
 
+    const oldIndex = WaitingList._findIndex(galleryUrl)
     const newWaitingList = arrayMove(
       waitingList,
-      waitingList.indexOf(galleryUrl),
+      oldIndex,
       0,
     )
 

@@ -1,6 +1,6 @@
 'use strict'
 
-const LinkedList = require('./linked-list')
+const LinkedList = require('../utils/linked-list')
 
 class TimeSlot {
   constructor({ downloadSpeed, completedLength }) {

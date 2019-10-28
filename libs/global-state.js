@@ -8,18 +8,18 @@ let globalState
 const GlobalState = {
   reset() {
     globalState = deepSeal({
-      inputGalleryUrl: '',
+      galleryUrl: '',
       galleryData: {
         title: '',
         items: [],
+        actualGalleryUrl: '',
       },
       aria2: {
         instance: null,
-        session: {
-          filePath: '',
-          isExists: false,
+        sessionFile: {
+          path: '',
+          isExisting: false,
         },
-        referer: '',
       },
       tasks: {
         data: null,

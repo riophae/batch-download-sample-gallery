@@ -7,7 +7,7 @@ const makeDir = require('make-dir')
 const prettyMs = require('pretty-ms')
 const leftPad = require('left-pad')
 
-const { isWebsiteSupported } = require('./adapters')
+const { isWebsiteSupported, isGalleryUrlValid } = require('./adapters')
 
 const Mutex = require('./libs/mutex')
 const WaitingList = require('./libs/waiting-list')
@@ -280,6 +280,10 @@ async function main() {
 
   if (hasInput && !isWebsiteSupported(galleryUrl)) {
     throw new Error(`Website not supported: ${galleryUrl}`)
+  }
+
+  if (hasInput && !isGalleryUrlValid(galleryUrl)) {
+    throw new Error(`The website is supported, but the url is not: ${galleryUrl}`)
   }
 
   const isAlreadyInWaitingList = hasInput && WaitingList.isInList(galleryUrl)

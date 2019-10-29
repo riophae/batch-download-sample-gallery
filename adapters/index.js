@@ -24,6 +24,10 @@ function isWebsiteSupported(galleryUrl) {
   return adapters.some(adapter => compareDomains(adapter.domain, host))
 }
 
+function isGalleryUrlValid(galleryUrl) {
+  return !!findAdapterForUrl(galleryUrl)
+}
+
 function findAdapterForUrl(galleryUrl) {
   const { host } = Url.parse(galleryUrl)
 
@@ -63,6 +67,7 @@ async function loadGallery(galleryUrl) {
 
 module.exports = {
   isWebsiteSupported,
+  isGalleryUrlValid,
   createHashForUrl,
   loadGallery,
 }

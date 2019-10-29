@@ -13,16 +13,32 @@ function urlProcessor(galleryUrl) {
   const { pathname } = Url.parse(galleryUrl)
   const splitPathname = pathname.split('/')
 
-  if (splitPathname.length > 2 && splitPathname[1] === 'reviews') {
-    return {
-      reviewId: splitPathname[2],
-    }
+  if (
+    splitPathname.length > 2 &&
+    splitPathname[1] === 'reviews'
+  ) return {
+    type: 'review',
+    reviewId: splitPathname[2],
+  }
+
+  if (
+    splitPathname.length > 2 &&
+    splitPathname[1] === 'previews'
+  ) return {
+    type: 'preview',
+    previewId: splitPathname[2],
   }
 }
 
 async function galleryLoader(galleryUrl) {
-  const { reviewId } = urlProcessor(galleryUrl)
-  const actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/preview_images`
+  const { type, reviewId/*, previewId */ } = urlProcessor(galleryUrl)
+  let actualGalleryUrl
+
+  if (type === 'review') {
+    actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/preview_images`
+  } else if (type === 'preview') {
+    actualGalleryUrl = galleryUrl
+  }
 
   const html = await request({ url: actualGalleryUrl })
   const $ = cheerio.load(html)

@@ -9,9 +9,6 @@ const untilProcessExits = require('../utils/until-process-exits')
 const Config = require('./config')
 const GlobalState = require('./global-state')
 
-const CHECK_PORT_RETRY_INTERVAL = 50
-const CHECK_PORT_TIMEOUT = 5000
-
 let aria2server
 let aria2client
 
@@ -42,11 +39,7 @@ const Aria2 = {
       console.error(error)
       process.exit(1)
     })
-    await portUsed.waitUntilUsed(
-      port,
-      CHECK_PORT_RETRY_INTERVAL,
-      CHECK_PORT_TIMEOUT,
-    )
+    await portUsed.waitUntilUsed(port)
 
     aria2client = new Aria2Client({
       host: 'localhost',

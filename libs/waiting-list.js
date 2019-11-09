@@ -15,22 +15,28 @@ let waitingList = []
 const WaitingList = {
   init() {
     return new Promise((resolve, reject) => {
-      chokidar.watch(WAITING_LIST_FILE_PATH)
-        .on('ready', () => {
-          try {
-            WaitingList._read()
-            resolve()
-          } catch (error) {
-            reject(error)
-          }
-        })
-        .on('add', WaitingList._read)
-        .on('change', WaitingList._read)
-        .on('unlink', WaitingList._read)
-        .on('error', error => {
-          console.error(error)
-          process.exit(1)
-        })
+      const watcher = chokidar.watch(WAITING_LIST_FILE_PATH, {
+        awaitWriteFinish: {
+          stabilityThreshold: 500,
+          pollInterval: 50,
+        },
+      })
+
+      watcher.on('ready', () => {
+        try {
+          WaitingList._read()
+          resolve()
+        } catch (error) {
+          reject(error)
+        }
+      })
+      watcher.on('add', WaitingList._read)
+      watcher.on('change', WaitingList._read)
+      watcher.on('unlink', WaitingList._read)
+      watcher.on('error', error => {
+        console.error(error)
+        process.exit(1)
+      })
     })
   },
 

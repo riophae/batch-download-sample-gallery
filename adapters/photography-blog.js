@@ -5,6 +5,7 @@ const cheerio = require('cheerio')
 const dedupe = require('dedupe')
 const Config = require('../libs/config')
 const request = require('../utils/request')
+const isPageExisting = require('../utils/is-page-existing')
 const getFilenameFromUrl = require('../utils/get-filename-from-url')
 
 const domain = 'photographyblog.com'
@@ -35,7 +36,16 @@ async function galleryLoader(galleryUrl) {
   let actualGalleryUrl
 
   if (type === 'review') {
-    actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/preview_images`
+    actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/sample_images`
+
+    if (!await isPageExisting(actualGalleryUrl)) {
+      actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/preview_images`
+
+      if (!await isPageExisting(actualGalleryUrl)) {
+        // TODO
+        actualGalleryUrl = null
+      }
+    }
   } else if (type === 'preview') {
     actualGalleryUrl = galleryUrl
   }

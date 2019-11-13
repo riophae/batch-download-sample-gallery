@@ -4,11 +4,11 @@ const Url = require('url')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
 const request = require('../utils/request')
+const joinUrl = require('../utils/join-url')
 
 const domain = 'imaging-resource.com'
 
-const fileNameRE = /[a-z0-9-_]+\.[a-z0-9]{3}/ig
-const testFileNameRE = /^[a-z0-9-_]+\.[a-z0-9]{3}$/i
+const fileNameRE = /^[a-z0-9-_]+\.[a-z0-9]{3}$/i
 
 function urlProcessor(galleryUrl) {
   const { pathname } = Url.parse(galleryUrl)
@@ -16,36 +16,61 @@ function urlProcessor(galleryUrl) {
 
   if (splitPathname.length > 3 && splitPathname[1] === 'PRODS') {
     return {
-      productId: splitPathname[2],
+      type: 'camera',
+      cameraModel: splitPathname[2],
+    }
+  }
+
+  if (splitPathname.length > 3 && splitPathname[1] === 'lenses') {
+    return {
+      type: 'lens',
+      lensModel: splitPathname.slice(2, 4).join('/'),
     }
   }
 }
 
 async function galleryLoader(galleryUrl) {
-  const { productId } = urlProcessor(galleryUrl)
-  const actualGalleryUrl = `https://www.imaging-resource.com/PRODS/${productId}/${productId}GALLERY.HTM`
+  const { type, cameraModel, lensModel } = urlProcessor(galleryUrl)
+  let actualGalleryUrl
+
+  if (type === 'camera') {
+    actualGalleryUrl = `https://www.imaging-resource.com/PRODS/${cameraModel}/${cameraModel}GALLERY.HTM`
+  } else if (type === 'lens') {
+    actualGalleryUrl = `https://www.imaging-resource.com/lenses/${lensModel}/gallery-images/`
+  }
 
   const html = await request({ url: actualGalleryUrl })
   const $ = cheerio.load(html)
 
   $('#thumbs-table').remove('load').remove('noscript')
 
-  const title = $('h1#bc_r_camname_large .bc_r_camname_mfr').text().trim()
-  const links = $('#thumbs-table a').toArray()
+  const title = $('h1#bc_r_camname_large').text().trim()
+  const items = $('#thumbs-table a').toArray()
+    .filter(link => {
+      const child = link.children[0]
 
-  let fileNames = links
-    .map(elem => $(elem).text().trim())
-    .filter(text => testFileNameRE.test(text))
-  if (!fileNames.length) {
-    fileNames = $('#thumbs-table').text().match(fileNameRE)
-  }
+      return (
+        link.children.length === 1 &&
+        child.type === 'text' &&
+        fileNameRE.test(child.data)
+      )
+    })
+    .map(link => {
+      const child = link.children[0]
+      const name = child.data
+      const url = joinUrl(
+        actualGalleryUrl,
+        link.attribs.href,
+        'FULLRES/',
+        name,
+      )
+
+      return { name, url }
+    })
 
   return {
     title,
-    items: dedupe(fileNames).map(fileName => ({
-      name: fileName,
-      url: `https://www.imaging-resource.com/PRODS/${productId}/FULLRES/${fileName}`,
-    })),
+    items: dedupe(items, item => item.url),
     actualGalleryUrl,
   }
 }

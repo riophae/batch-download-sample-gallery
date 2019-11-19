@@ -3,7 +3,7 @@
 const Url = require('url')
 const assert = require('assert')
 const hash = require('object-hash')
-const Config = require('../libs/config')
+const Config = require('../lib/config')
 const updateStdout = require('../utils/update-stdout')
 const compareDomains = require('../utils/compare-domains')
 

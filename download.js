@@ -9,12 +9,12 @@ const leftPad = require('left-pad')
 
 const { isWebsiteSupported, isGalleryUrlValid } = require('./adapters')
 
-const Mutex = require('./libs/mutex')
-const WaitingList = require('./libs/waiting-list')
-const Config = require('./libs/config')
-const GlobalState = require('./libs/global-state')
-const Aria2 = require('./libs/aria2')
-const SpeedAnalyzer = require('./libs/speed-analyzer')
+const Mutex = require('./lib/mutex')
+const WaitingList = require('./lib/waiting-list')
+const Config = require('./lib/config')
+const GlobalState = require('./lib/global-state')
+const Aria2 = require('./lib/aria2')
+const SpeedAnalyzer = require('./lib/speed-analyzer')
 
 const GlobalStopwatch = require('./utils/global-stopwatch')
 const isValidUrl = require('./utils/is-valid-url')

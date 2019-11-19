@@ -30,7 +30,7 @@ async function galleryLoader(galleryUrl) {
 
   return {
     title: data.gallery.title,
-    items: data.images.reduce((prev, item) => {
+    images: data.images.reduce((prev, item) => {
       if (item.url) prev.push({
         name: `${item.id}.jpg`,
         url: item.url,

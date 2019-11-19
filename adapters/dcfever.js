@@ -29,7 +29,7 @@ async function galleryLoader(galleryUrl) {
 
   return {
     title,
-    items: links.map(link => ({
+    images: links.map(link => ({
       name: `${link.attribs.href.match(/picture=(\d+)/)[1]}.jpg`,
       url: link.children[0].attribs.src.replace(/_s\.jpg$/, '.jpg'),
     })),

@@ -3,7 +3,6 @@
 const Url = require('url')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
-const Config = require('../libs/config')
 const request = require('../utils/request')
 const isPageExisting = require('../utils/is-page-existing')
 const getFilenameFromUrl = require('../utils/get-filename-from-url')
@@ -57,21 +56,21 @@ async function galleryLoader(galleryUrl) {
     .text()
     .replace(/\bReview\b/, '')
     .trim()
-  const images = $('table .exif a')
+  const imageLinks = $('table .exif a')
     .toArray()
     .filter(el => $(el).text().trim() === 'Download Original')
-  const videos = Config.read('downloadSampleMovies')
-    ? $('p.movie-link a').toArray()
-    : []
-  const mediaUrls = [ ...images, ...videos ]
-    .map(el => $(el).prop('href'))
+  const videoLinks = $('p.movie-link a')
+    .toArray()
+  const linksToItems = links => dedupe(links.map(el => $(el).prop('href')))
+    .map(url => ({
+      name: getFilenameFromUrl(url),
+      url,
+    }))
 
   return {
     title,
-    items: dedupe(mediaUrls).map(mediaUrl => ({
-      name: getFilenameFromUrl(mediaUrl),
-      url: mediaUrl,
-    })),
+    images: linksToItems(imageLinks),
+    videos: linksToItems(videoLinks),
     actualGalleryUrl,
   }
 }

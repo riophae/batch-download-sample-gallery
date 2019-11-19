@@ -3,6 +3,7 @@
 const Url = require('url')
 const assert = require('assert')
 const hash = require('object-hash')
+const Config = require('../libs/config')
 const updateStdout = require('../utils/update-stdout')
 const compareDomains = require('../utils/compare-domains')
 
@@ -57,10 +58,21 @@ async function loadGallery(galleryUrl) {
   const galleryData = await adapter.galleryLoader(galleryUrl)
 
   assert(typeof galleryData.title === 'string' && galleryData.title.length)
-  assert(Array.isArray(galleryData.items) && galleryData.items.length)
+  assert(Array.isArray(galleryData.images) && galleryData.images.length)
+  if ('videos' in galleryData) {
+    assert(Array.isArray(galleryData.videos))
+  } else {
+    galleryData.videos = []
+  }
   assert(typeof galleryData.actualGalleryUrl === 'string' && galleryData.actualGalleryUrl.length)
 
   galleryData.title += ` (${adapter.id})`
+  galleryData.items = Config.read('downloadSampleMovies')
+    ? [ ...galleryData.images, ...galleryData.videos ]
+    : [ ...galleryData.images ]
+
+  delete galleryData.images
+  delete galleryData.videos
 
   return galleryData
 }

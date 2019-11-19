@@ -70,7 +70,7 @@ async function galleryLoader(galleryUrl) {
 
   return {
     title,
-    items: dedupe(items, item => item.url),
+    images: dedupe(items, item => item.url),
     actualGalleryUrl,
   }
 }

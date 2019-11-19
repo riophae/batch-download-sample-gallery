@@ -4,7 +4,7 @@ const Url = require('url')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
 const request = require('../utils/request')
-const isPageExisting = require('../utils/is-page-existing')
+// const isPageExisting = require('../utils/is-page-existing')
 const getFilenameFromUrl = require('../utils/get-filename-from-url')
 
 const domain = 'photographyblog.com'
@@ -35,15 +35,15 @@ async function galleryLoader(galleryUrl) {
   let actualGalleryUrl
 
   if (type === 'review') {
-    actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/sample_images`
+    const html = await request({ url: `https://www.photographyblog.com/reviews/${reviewId}` })
+    const $ = cheerio.load(html)
 
-    if (!await isPageExisting(actualGalleryUrl)) {
+    if ($('.review-toc .sample_images:not(.disabled)').length) {
+      actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/sample_images`
+    } else if ($('.review-toc .preview_images:not(.disabled)').length) {
       actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/preview_images`
-
-      if (!await isPageExisting(actualGalleryUrl)) {
-        // TODO
-        actualGalleryUrl = null
-      }
+    } else {
+      // TODO
     }
   } else if (type === 'preview') {
     actualGalleryUrl = galleryUrl

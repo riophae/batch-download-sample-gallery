@@ -2,7 +2,7 @@
 
 ![screenshot](https://raw.githubusercontent.com/riophae/batch-download-sample-gallery/master/screenshot.png)
 
-Batch download sample images from digital camera review websites.
+A CLI tool for batch downloading sample images from digital camera review websites.
 
 ## Supported
 
@@ -36,7 +36,7 @@ Per default the downloaded image files will be saved in `output/<Gallery Name>/`
 
 ## Configuration
 
-- Copy `config.default.js` and rename it to `config.js`
+- Make a copy of `config.default.js` and rename it to `config.js`
 - Edit it to your likings
 
 ## License

@@ -16,5 +16,8 @@ module.exports = {
     speedLimit: '0',
     overallSpeedLimit: '0',
     // diskCache: '16M',
+    enableLogging: false,
+    logOutputDir: path.join(__dirname, 'logs'),
+    logLevel: 'notice',
   },
 }

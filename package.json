@@ -11,8 +11,7 @@
     "eslint": "^6.2.2",
     "eslint-config-riophae": "^0.9.0",
     "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-unicorn": "^11.0.2",
-    "lodash": "^4.17.15"
+    "eslint-plugin-unicorn": "^11.0.2"
   },
   "dependencies": {
     "@extra-array/compact": "^1.1.7",
@@ -32,6 +31,7 @@
     "just-once": "^1.1.1",
     "just-remove": "^2.1.0",
     "left-pad": "^1.3.0",
+    "lodash": "^4.17.15",
     "log-update": "^3.2.0",
     "make-dir": "^3.0.0",
     "object-hash": "^2.0.0",
@@ -42,6 +42,7 @@
     "progress-bar-formatter": "^2.0.1",
     "request": "^2.85.0",
     "request-promise-native": "^1.0.5",
+    "rotating-file-stream": "^1.4.6",
     "tinydate": "^1.2.0",
     "xbytes": "^1.5.0",
     "yallist": "^4.0.0"

@@ -38,9 +38,15 @@ async function galleryLoader(galleryUrl) {
     const html = await request({ url: `https://www.photographyblog.com/reviews/${reviewId}` })
     const $ = cheerio.load(html)
 
-    if ($('.review-toc .sample_images:not(.disabled)').length) {
+    if (
+      $('.toc .sample_images:not(.disabled)').length ||
+      $('.review-toc .sample_images:not(.disabled)').length
+    ) {
       actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/sample_images`
-    } else if ($('.review-toc .preview_images:not(.disabled)').length) {
+    } else if (
+      $('.toc .preview_images:not(.disabled)').length ||
+      $('.review-toc .preview_images:not(.disabled)').length
+    ) {
       actualGalleryUrl = `https://www.photographyblog.com/reviews/${reviewId}/preview_images`
     } else {
       // TODO

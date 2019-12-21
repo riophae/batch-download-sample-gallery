@@ -45,28 +45,47 @@ async function galleryLoader(galleryUrl) {
   $('#thumbs-table').remove('load').remove('noscript')
 
   const title = $('h1#bc_r_camname_large').text().trim()
-  const items = $('#thumbs-table a').toArray()
-    .filter(link => {
-      const child = link.children[0]
+  const items = []
 
-      return (
-        link.children.length === 1 &&
-        child.type === 'text' &&
-        fileNameRE.test(child.data)
-      )
-    })
-    .map(link => {
-      const child = link.children[0]
-      const name = child.data
-      const url = joinUrl(
-        actualGalleryUrl,
-        link.attribs.href,
-        'FULLRES/',
-        name,
-      )
+  $('#thumbs-table td').toArray().forEach(td => {
+    const childNodes = Array.from($(td).contents())
 
-      return { name, url }
+    childNodes.forEach(childNode => {
+      if (childNode.type === 'text') {
+        const text = childNode.data.trim()
+        const matched = text.match(fileNameRE)
+
+        if (matched) {
+          const name = matched[0]
+          const url = joinUrl(
+            actualGalleryUrl,
+            'FULLRES/',
+            name,
+          )
+
+          items.push({ name, url })
+        }
+      } else if (childNode.type === 'tag' && childNode.name === 'a') {
+        const grandchildNode = childNode.children[0]
+
+        if (
+          childNode.children.length === 1 &&
+          grandchildNode.type === 'text' &&
+          fileNameRE.test(grandchildNode.data.trim())
+        ) {
+          const name = grandchildNode.data.trim()
+          const url = joinUrl(
+            actualGalleryUrl,
+            childNode.attribs.href,
+            'FULLRES/',
+            name,
+          )
+
+          items.push({ name, url })
+        }
+      }
     })
+  })
 
   return {
     title,

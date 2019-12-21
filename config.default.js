@@ -7,6 +7,7 @@ module.exports = {
   downloadSampleMovies: false,
   enableProxy: (/* uri */) => false,
   proxy: 'http://127.0.0.1:9999',
+  userAgent: '',
   aria2: {
     // If not specified, a random idle port will be automatically assigned
     // port: 3456,

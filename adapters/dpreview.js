@@ -26,6 +26,9 @@ async function galleryLoader(galleryUrl) {
     url: 'https://www.dpreview.com/sample-galleries/data/get-gallery',
     qs: { galleryId, isMobile: false },
     json: true,
+    headers: {
+      Referer: galleryUrl,
+    },
   })
 
   return {

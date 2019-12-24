@@ -6,6 +6,7 @@ const hash = require('object-hash')
 const Config = require('../lib/config')
 const updateStdout = require('../utils/update-stdout')
 const compareDomains = require('../utils/compare-domains')
+const removeExtraWhitespaces = require('../utils/remove-extra-whitespaces')
 
 const adapterIds = [
   'dpreview',
@@ -66,7 +67,7 @@ async function loadGallery(galleryUrl) {
   }
   assert(typeof galleryData.actualGalleryUrl === 'string' && galleryData.actualGalleryUrl.length)
 
-  galleryData.title += ` (${adapter.id})`
+  galleryData.title = removeExtraWhitespaces(`${galleryData.title} (${adapter.id})`)
   galleryData.items = Config.read('downloadSampleMovies')
     ? [ ...galleryData.images, ...galleryData.videos ]
     : [ ...galleryData.images ]

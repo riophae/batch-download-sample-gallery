@@ -145,13 +145,6 @@ function clearSpeedAnalyzerForDownloads(downloads) {
   }
 }
 
-async function retryTask(task) {
-  const aria2client = Aria2.getClient()
-
-  await aria2client.call('pause', task.gid)
-  await aria2client.call('unpause', task.gid)
-}
-
 async function checkProgress() {
   const galleryData = GlobalState.get('galleryData')
   const aria2client = Aria2.getClient()
@@ -181,7 +174,7 @@ async function checkProgress() {
 
     if (task.speedAnalyzer.hasEnoughSamples()) {
       if (task.speedAnalyzer.getAverageDownloadSpeed() < 256 * 1024) {
-        retryTask(task)
+        Aria2.reconnect(task.gid)
       }
     }
 

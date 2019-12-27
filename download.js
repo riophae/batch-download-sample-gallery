@@ -49,10 +49,16 @@ async function prepare() {
   })
 }
 
-function initTasks() {
-  return GlobalState.get('aria2.sessionFile.isExisting')
-    ? readTasks()
-    : createTasks()
+async function initTasks() {
+  const hasUnfinished = GlobalState.get('aria2.sessionFile.isExisting')
+  const aria2client = Aria2.getClient()
+
+  if (hasUnfinished) {
+    await readTasks()
+    await aria2client.call('unpauseAll')
+  } else {
+    await createTasks()
+  }
 }
 
 async function createTasks() {

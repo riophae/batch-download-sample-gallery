@@ -145,6 +145,29 @@ function clearSpeedAnalyzerForDownloads(downloads) {
   }
 }
 
+function generateWaitingListStatusLines() {
+  let waitingListStatusLines = WaitingList.getRest()
+    .map(entry => `${entry.galleryData.title}`)
+  const truncatedLines = waitingListStatusLines.splice(5)
+
+  if (truncatedLines.length) {
+    waitingListStatusLines.push(`...and ${truncatedLines.length} more.`)
+  }
+
+  if (waitingListStatusLines.length) {
+    waitingListStatusLines = waitingListStatusLines.map((line, index) => {
+      const isLastLine = index === waitingListStatusLines.length - 1
+      const prefix = isLastLine ? '└' : '├'
+
+      return '  ' + prefix + '── ' + line
+    })
+
+    waitingListStatusLines.unshift('Waiting:')
+  }
+
+  return waitingListStatusLines
+}
+
 async function checkProgress() {
   const galleryData = GlobalState.get('galleryData')
   const aria2client = Aria2.getClient()
@@ -189,12 +212,6 @@ async function checkProgress() {
     ].join(' ')
   })
 
-  const waitingListStatusLines = WaitingList.getRest()
-    .map(entry => `  - ${entry.galleryData.title}`)
-  if (waitingListStatusLines.length) {
-    waitingListStatusLines.unshift('Waiting:')
-  }
-
   updateStdout([
     `Gallery: ${chalk.bold(galleryData.title)}`,
     '',
@@ -202,9 +219,10 @@ async function checkProgress() {
     '',
     `Overall speed: ${chalk.bold(xbytes(Number(globalStat.downloadSpeed)) + '/s')}`,
     `Overall progress: [${chalk.bold(progressBar.format(numberCompleted / numberTotal))}] ${numberCompleted} completed, ${numberTotal - numberCompleted} remaining`,
+    '',
     `aria2 RPC interface is listening at ${chalk.bold(aria2client.url('http'))} (no secret token)`,
     '',
-    ...waitingListStatusLines,
+    ...generateWaitingListStatusLines(),
   ])
 }
 

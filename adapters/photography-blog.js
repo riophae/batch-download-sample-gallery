@@ -58,10 +58,16 @@ async function galleryLoader(galleryUrl) {
   const html = await request({ url: actualGalleryUrl })
   const $ = cheerio.load(html)
 
-  const title = $('.entry-title-wide h1.item')
+  let title = $('.entry-title-wide h1.item')
     .text()
     .replace(/\bReview\b/, '')
     .trim()
+  if (type === 'review') {
+    title += ' Review Samples'
+  } else if (type === 'preview') {
+    title += ' Preview Samples'
+  }
+
   const imageLinks = $('table .exif a')
     .toArray()
     .filter(el => $(el).text().trim() === 'Download Original')

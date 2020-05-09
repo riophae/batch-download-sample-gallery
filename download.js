@@ -69,13 +69,14 @@ async function createTasks() {
   for (const [ i, item ] of items.entries()) {
     const filename = filenamify(item.name)
     const isProxyEnabled = Config.read('enableProxy')(item.url)
+    const proxySetting = isProxyEnabled
+      ? Config.read('proxy')
+      : null
     const gid = await aria2client.call('addUri', [ item.url ], {
       'dir': GlobalState.get('outputDir'),
       'out': filename,
       'referer': GlobalState.get('galleryData.actualGalleryUrl'),
-      'all-proxy': isProxyEnabled
-        ? Config.read('proxy')
-        : null,
+      'all-proxy': proxySetting,
     })
 
     tasks[gid] = {
@@ -84,6 +85,7 @@ async function createTasks() {
       filename,
       url: item.url,
       isProxyEnabled,
+      proxySetting,
       speedAnalyzer: null,
     }
   }
@@ -98,17 +100,24 @@ async function readTasks() {
   Object.assign(tasks, require(GlobalState.get('tasks.jsonFilePath')))
 
   for (const [ gid, task ] of Object.entries(tasks)) {
-    const oldProxySetting = task.isProxyEnabled
-    const newProxySetting = Config.read('enableProxy')(task.url)
+    const isProxyEnabled = Config.read('enableProxy')(task.url)
+    const oldProxySetting = task.proxySetting
+    const newProxySetting = isProxyEnabled
+      ? Config.read('proxy')
+      : null
 
     if (oldProxySetting !== newProxySetting) {
-      task.isProxyEnabled = newProxySetting
+      task.isProxyEnabled = isProxyEnabled
+      task.proxySetting = newProxySetting
 
-      await aria2client.call('changeOption', gid, {
-        'all-proxy': newProxySetting
-          ? Config.read('proxy')
-          : null,
-      })
+      // If the download task is already completed, its gid will no longer exist.
+      if (await Aria2.isGIDExisting(gid)) {
+        await aria2client.call('changeOption', gid, {
+          'all-proxy': newProxySetting
+            ? Config.read('proxy')
+            : null,
+        })
+      }
     }
   }
 

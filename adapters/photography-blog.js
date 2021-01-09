@@ -58,7 +58,7 @@ async function galleryLoader(galleryUrl) {
   const html = await request({ url: actualGalleryUrl })
   const $ = cheerio.load(html)
 
-  let title = $('.entry-title-wide h1.item')
+  let title = $('.entry-title-wide h1')
     .text()
     .replace(/\bReview\b/, '')
     .trim()

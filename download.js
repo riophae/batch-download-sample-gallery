@@ -213,7 +213,7 @@ async function checkProgress() {
     return [
       chalk.gray('Downloading:'),
       chalk.green(`[${leftPad(task.index, numberTotal.toString().length)}/${numberTotal}]`),
-      '[' + chalk.gray(progressBar.format(percent)) + ']',
+      `[${progressBar.format(percent)}]`,
       leftPad(totalLength ? xbytes(totalLength) : '', 12),
       leftPad(downloadSpeed ? `${xbytes(downloadSpeed)}/s` : '', 12),
       leftPad(remaining ? prettyMs(remaining) : '', 12),

@@ -199,7 +199,7 @@ async function checkProgress() {
     const percent = completedLength / totalLength || 0
     const remaining = downloadSpeed
       ? (1 - percent) * completedLength / downloadSpeed * 1000
-      : NaN
+      : Number.NaN
     const proxyIndicator = task.isProxyEnabled
       ? chalk.red('*')
       : ' '

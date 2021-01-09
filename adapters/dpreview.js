@@ -1,14 +1,13 @@
 'use strict'
 
 const path = require('path')
-const Url = require('url')
 const request = require('../utils/request')
 const getFilenameFromUrl = require('../utils/get-filename-from-url')
 
 const domain = 'dpreview.com'
 
 function urlProcessor(galleryUrl) {
-  const { pathname } = Url.parse(galleryUrl)
+  const { pathname } = new URL(galleryUrl)
   const splitPathname = pathname.split('/')
 
   if (

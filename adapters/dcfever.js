@@ -1,14 +1,14 @@
 'use strict'
 
-const Url = require('url')
 const cheerio = require('cheerio')
 const request = require('../utils/request')
 
 const domain = 'dcfever.com'
 
 function urlProcessor(galleryUrl) {
-  const { pathname, query } = Url.parse(galleryUrl, true)
+  const { pathname, searchParams } = new URL(galleryUrl)
   const splitPathname = pathname.split('/')
+  const query = Object.fromEntries(searchParams.entries())
 
   if (
     [ 'cameras', 'lens' ].includes(splitPathname[1]) &&

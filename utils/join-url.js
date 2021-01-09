@@ -1,10 +1,8 @@
 'use strict'
 
-const Url = require('url')
-
 function joinUrl(...parts) {
   const [ a, b, ...rest ] = parts
-  const c = Url.resolve(a, b)
+  const c = new URL(b, a).href
 
   return rest.length ? joinUrl(c, ...rest) : c
 }

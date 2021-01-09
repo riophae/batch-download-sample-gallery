@@ -1,6 +1,5 @@
 'use strict'
 
-const Url = require('url')
 const assert = require('assert')
 const hash = require('object-hash')
 const Config = require('../lib/config')
@@ -21,7 +20,7 @@ const adapters = adapterIds.map(id => {
 })
 
 function isWebsiteSupported(galleryUrl) {
-  const { host } = Url.parse(galleryUrl)
+  const { host } = new URL(galleryUrl)
 
   return adapters.some(adapter => compareDomains(adapter.domain, host))
 }
@@ -31,7 +30,7 @@ function isGalleryUrlValid(galleryUrl) {
 }
 
 function findAdapterForUrl(galleryUrl) {
-  const { host } = Url.parse(galleryUrl)
+  const { host } = new URL(galleryUrl)
 
   return adapters.find(adapter => (
     compareDomains(adapter.domain, host) &&

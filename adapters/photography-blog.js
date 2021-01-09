@@ -1,6 +1,5 @@
 'use strict'
 
-const Url = require('url')
 const cheerio = require('cheerio')
 const dedupe = require('dedupe')
 const request = require('../utils/request')
@@ -10,7 +9,7 @@ const getFilenameFromUrl = require('../utils/get-filename-from-url')
 const domain = 'photographyblog.com'
 
 function urlProcessor(galleryUrl) {
-  const { pathname } = Url.parse(galleryUrl)
+  const { pathname } = new URL(galleryUrl)
   const splitPathname = pathname.split('/')
 
   if (

@@ -1,9 +1,7 @@
 'use strict'
 
-const Url = require('url')
-
 module.exports = input => {
-  const { protocol, hostname, pathname } = Url.parse(input)
+  const { protocol, hostname, pathname } = new URL(input)
 
   return !!(protocol && hostname && pathname)
 }
